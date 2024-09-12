@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="Tooplate">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet">
+
+    <title>Books & Rents - Suscripciones</title>
+
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="static/assets/css/bootstrap.min.css">
+
+    <link rel="stylesheet" type="text/css" href="static/assets/css/font-awesome.css">
+
+    <link rel="stylesheet" type="text/css" href="static/assets/css/owl-carousel.css">
+
+    <link rel="stylesheet" href="static/assets/css/bookandArts.css">
+<!--
+
+-->
+    </head>
+    
+    <body>
+    
+    <!-- ***** Preloader Start ***** -->
+    <div id="js-preloader" class="js-preloader">
+      <div class="preloader-inner">
+        <span class="dot"></span>
+        <div class="dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+    <!-- ***** Preloader End ***** -->
+    
+    <!-- ***** Pre HEader ***** -->
+    <div class="pre-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 col-sm-6">
+                    <span>Necesitas contactarnos?</span>
+                </div>
+                <div class="col-lg-6 col-sm-6">
+                    <div class="text-button">
+                        <a href="Suscripciones.html">Contactanos aquí! <i class="fa fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ***** Header  ***** -->
+    <header class="header-area header-sticky">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <nav class="main-nav">
+                        <!-- ***** Logo Start ***** -->
+                        <a href="{% url 'index' %}" class="logo">Books&<em>Rents</em></a>
+                        <!-- ***** Logo End ***** -->
+                        <!-- ***** Menu Start ***** -->
+                        <ul class="nav">
+                            <li><a href="{% url 'index' %}" class="active">Inicio</a></li>
+                            <li><a href="{% url 'Promociones' %}" >Promociones</a></li>
+                            <li><a href="{% url 'Suscripciones' %}">Suscripción</a></li>
+                            <li><a href="{% url 'Arriendos' %}">Arrendar Libros</a></li> 
+                            <li><a href="{% url 'ComprarLibros' %}">Comprar Libros</a></li> 
+                            <li><a class="fa fa-user" href="{% url 'Perfil' %}"> Mi Perfil</a></li>
+                            <li><a class="fa fa-shopping-cart" href="{% url 'Carrito' %}"> Carrito</a></li>
+                        </ul>           
+                        <a class='menu-trigger'>
+                            <span>Menu</span>
+                        </a>
+                        <!-- ***** Menu End ***** -->
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- ***** Header Area End ***** -->
+
+    <!-- ***** About Us Page ***** -->
+    <div class="page-heading-rent-venue">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h2>Te interesa suscribirte?</h2>
+                    <span>Revisa todos los beneficios que tendrás con cada una de nuestras suscripciones!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rent-venue-tabs">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="row" id="tabs">
+                        <div class="col-lg-12">
+                            <div class="heading-tabs">
+                                <div class="row">
+                                    <div class="col-lg-8">
+                                        <ul>
+                                          <li><a href='#tabs-1'>Básica</a></li>
+                                          <li><a href='#tabs-2'>Completa</a></a></li>
+                                          <li><a href='#tabs-3'>Ultra</a></a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-lg-4">
+                                          <div class="main-dark-button">
+                                              <a href="ticket-details.html">Suscribirse</a>
+                                          </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-12">
+                            <section class='tabs-content'>
+                                <article id='tabs-1'>
+                                    <div class="row">
+                                        <div class="col-lg-9">
+                                            <div class="right-content">
+                                                <h4>Básica</h4>
+                                                <p> Accede a nuestra biblioteca con cientos de títulos y disfruta del arrendamiento de libros físicos o digitales. Perfecta para quienes buscan una experiencia sencilla y accesible. <ul class="list">
+                                                    <li>Básica</li>
+                                                    <li>$4.500 al mes</li>
+                                                    <li>860 suscritos</li>
+                                                </ul>
+                                            </div>
+                                       
+                                        </div>
+                                    </div>
+                                </article>                            
+                                <article id='tabs-2'>
+                                    <div class="row">
+                                        <div class="col-lg-9">
+                                            <div class="right-content">
+                                                <h4>Completa</h4>
+                                                <p> Todo lo que incluye la suscripción básica, pero con acceso prioritario a lanzamientos recientes y mayor flexibilidad en el número de libros que puedes arrendar simultáneamente. Ideal para los lectores ávidos que quieren estar siempre al día.
+                                                    <ul class="list">
+                                                    <li>Completa</li>
+                                                    <li>$5.500 al mes</li>
+                                                    <li>300 Suscritos</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                       
+                                    </div>
+                                </article>   
+                                <article id='tabs-3'>
+                                    <div class="row">
+                                        <div class="col-lg-9">
+                                            <div class="right-content">
+                                                <h4>Ultra</h4>
+                                                <p> La experiencia definitiva para los amantes de la lectura. Además de los beneficios de la suscripción completa, disfrutarás de acceso ilimitado a todos los títulos de nuestra biblioteca, libros exclusivos, entregas rápidas sin costo adicional y acceso anticipado a novedades literarias y eventos especiales. ¡La mejor opción para quienes buscan lo mejor de lo mejor!
+                                                     <ul class="list">
+                                                    <li>Ultra</li>
+                                                    <li>$6.500 al mes</li>
+                                                    <li>250 Suscritos</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        </div>
+                                    </div>
+                                </article>    
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rent-venue-application">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="heading-text">
+                        <h4>Quieres más información?</h4>
+                    </div>
+                    <div class="contact-form">
+                        <form id="contact" action="" method="post">
+                          <div class="row">
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="name" type="text" id="name" placeholder="Ingresa tu nombre*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="email" type="text" id="email" pattern="[^ @]*@[^ @]*" placeholder="Ingresa tu correo*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="phone-number" type="text" id="phone-number" placeholder="Teléfono*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="company-organization" type="text" id="company-organization" placeholder="Compañía / Organización / Colegio*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="venue-requested" type="text" id="venue-requested" placeholder="Motivo*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                              <fieldset>
+                                <input name="type-event" type="text" id="type-event" placeholder="Tipo de cuenta*" required="">
+                              </fieldset>
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                         
+                            </div>
+                            <div class="col-lg-12">
+                              <fieldset>
+                                <textarea name="about-event-hosting" rows="6" id="about-event-hosting" placeholder="Cuéntanos" required=""></textarea>
+                              </fieldset>
+                            </div>
+                            <div class="col-lg-12">
+                              <fieldset>
+                                <button type="submit" id="form-submit" class="main-dark-button">Enviar</button>
+                              </fieldset>
+                            </div>
+                          </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+  <!-- *** Subscribe *** -->
+    <div class="subscribe">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <h4>Recibe novedades!</h4>
+                </div>
+                <div class="col-lg-8">
+                    <form id="subscribe" action="" method="get">
+                        <div class="row">
+                          <div class="col-lg-9">
+                            <fieldset>
+                              <input name="email" type="text" id="email" pattern="[^ @]*@[^ @]*" placeholder="Ingresa tu correo" required="">
+                            </fieldset>
+                          </div>
+                          <div class="col-lg-3">
+                            <fieldset>
+                              <button type="submit" id="form-submit" class="main-dark-button">Enviar</button>
+                            </fieldset>
+                          </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- *** Footer *** -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="address">
+                        <h4>Servicio al cliente</h4>
+                        <span>¿Cómo comprar?, <br>Política de cambios y devoluciones<br>Términos y condiciones</span>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="links">
+                        <h4>Books and rents</h4>
+                        <ul>
+                            <li><a href="#">Misión y visión</a></li>
+                            <li><a href="#">Trabaja con nosotros</a></li>
+                            <li><a href="#">Nuestra tienda</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hours">
+                        <h4>Contacto</h4>
+                        <ul>
+                            <li>bookandrents@contacto.cl</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <div class="under-footer">
+                        <div class="row">
+                            <div class="col-lg-6 col-sm-6">
+                                <p>São Conrado, Rio de Janeiro</p>
+                            </div>
+                            <div class="col-lg-6 col-sm-6">
+                                <p class="copyright">Copyright 2024 Books&Rents Company 
+                    
+                    		
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <div class="sub-footer">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="logo"><span>Books&<em>Rents</em></span></div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="menu">
+                                    <ul>
+                                        <li><a href="index.html" class="active">Inicio</a></li>
+                                        <li><a href="{% url 'Promociones' %}">Promociones</a></li>
+                                        <li><a href="Suscripciones.html">Suscripción</a></li>
+                                        <li><a href="Arriendos.html">Arrendar Libros</a></li> 
+                                        <li><a href="ComprarLibros.html">Comprar Libros</a></li> 
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="social-links">
+                                    <ul>
+                                        <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                                        <li><a href="#"><i class="fa fa-behance"></i></a></li>
+                                        <li><a href="#"><i class="fa fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- jQuery -->
+    <script src="static/assets/js/jquery-2.1.0.min.js"></script>
+
+    <!-- Bootstrap -->
+    <script src="static/assets/js/popper.js"></script>
+    <script src="static/assets/js/bootstrap.min.js"></script>
+
+    <!-- Plugins -->
+    <script src="static/assets/js/scrollreveal.min.js"></script>
+    <script src="static/assets/js/waypoints.min.js"></script>
+    <script src="static/assets/js/jquery.counterup.min.js"></script>
+    <script src="static/assets/js/imgfix.min.js"></script> 
+    <script src="static/assets/js/mixitup.js"></script> 
+    <script src="static/assets/js/accordions.js"></script>
+    <script src="static/assets/js/owl-carousel.js"></script>
+    
+    <!-- Global Init -->
+    <script src="static/assets/js/custom.js"></script>
+
+  </body>
+</html>
