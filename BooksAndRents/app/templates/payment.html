@@ -1,0 +1,32 @@
+<!-- payment.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagar con Mercado Pago</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+    <h1>Pagar con Mercado Pago</h1>
+    <div id="button-checkout"></div>
+
+    <script>
+        const mp = new MercadoPago('APP_USR-a0e5e44b-304f-4bd8-bc48-a8789a8e37e3', { locale: 'es-CL' });
+
+        fetch('/checkout/')
+        .then(response => response.json())
+        .then(data => {
+            mp.checkout({
+                preference: {
+                    id: data.preference_id  // ID de la preferencia devuelta por el backend
+                },
+                render: {
+                    container: '#button-checkout',
+                    label: 'Pagar',
+                }
+            });
+        });
+    </script>
+</body>
+</html>

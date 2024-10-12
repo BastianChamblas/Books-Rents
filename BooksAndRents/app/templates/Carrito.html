@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Mi Carrito - Books&Rents{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Carrito de {{ request.user.first_name }}</h1>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.producto.nom_libro }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>${{ item.producto.precio }}</td>
+                    <td>${{ item.get_total }}</td>
+                    <td>
+                        <form method="POST" action="{% url 'eliminar_del_carrito' item.id %}">
+                            {% csrf_token %}
+                            <input type="number" name="cantidad" min="1" max="{{ item.cantidad }}" value="1" class="form-control" style="width: 60px; display:inline-block;">
+                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Tu carrito está vacío.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-right">
+        <h2>Total: ${{ total }}</h2>
+    </div>
+
+    {% if items %}
+    <!-- Contenedor para el botón de pago de Mercado Pago -->
+    <div id="button-checkout" class="text-right" style="margin-top: 20px; min-height: 50px;"></div>
+    {% endif %}
+</div>
+
+<!-- SDK de Mercado Pago -->
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+
+<script>
+    // Inicializar el SDK de Mercado Pago con clave pública
+    const mp = new MercadoPago('APP_USR-a0e5e44b-304f-4bd8-bc48-a8789a8e37e3', {
+        locale: 'es-CL' // chilito
+    });
+
+    // Solo generar el botón si hay elementos en el carrito
+    if (document.getElementById("button-checkout")) {
+        // Obtener el token CSRF desde las cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        // Obtener el `preference_id` del backend para generar el botón de pago
+        fetch("{% url 'checkout' %}", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken // Incluye el token CSRF si es necesario
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Respuesta del servidor:', data); // Log para depuración
+            if (data.preference_id) {
+                // Renderizar el botón de pago
+                mp.checkout({
+                    preference: {
+                        id: data.preference_id  // Utiliza el `preference_id` devuelto por la vista 'checkout'
+                    },
+                    render: {
+                        container: '#button-checkout', // Contenedor donde se insertará el botón de pago
+                        label: `Pagar`, // Texto del botón, incluye el monto total
+                    }
+                });
+            } else {
+                console.error('No se recibió un preference_id válido.');
+            }
+        })
+        .catch(error => {
+            console.error('Error en la petición:', error);
+        });
+    }
+</script>
+
+{% endblock %}

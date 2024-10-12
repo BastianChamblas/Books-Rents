@@ -1,0 +1,7 @@
+crispy_bootstrap4
+django==3.2.11
+django-admin-interface
+django-crispy-forms
+django-colorfield
+django-rest-framework
+mysqlclient
