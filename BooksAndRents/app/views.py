@@ -20,15 +20,70 @@ def Promociones(request):
 def Suscripciones(request):
     return render(request, 'Suscripciones.html')
 
+@login_required
 def Perfil(request):
-    return render(request, 'Perfil.html')
+    usuario = request.user
+
+    suscripcion = Sub.objects.filter(id_us=usuario).first()
+
+    return render(request, 'Perfil.html', {
+        'usuario': usuario,
+        'suscripcion': suscripcion
+    })
 
 def ComprarLibros(request):
     libros = Libro.objects.all()
     return render(request, 'ComprarLibros.html', {'libros': libros})
 
+@login_required
 def Arriendos(request):
-    return render(request, 'Arriendos.html')
+    # Verificar si el usuario tiene una suscripción activa
+    suscripcion_activa = Sub.objects.filter(id_us=request.user, fecha_inicio__lte=timezone.now(), fecha_inicio__gte=timezone.now()-timedelta(days=30)).exists()
+
+    if not suscripcion_activa:
+        messages.error(request, 'Debe tener una suscripción activa para realizar un arriendo.')
+        return redirect('ver_suscripciones')  # Redirige a la página de suscripciones si no está suscrito
+
+    # Obtener los libros con stock disponible
+    libros = LibroArr.objects.filter(stock__gt=0)
+
+    if request.method == 'POST':
+        # Obtener los libros seleccionados
+        libros_ids = request.POST.getlist('libros_ids')  # IDs de los libros seleccionados
+        cantidades = request.POST.getlist('cantidades')  # Cantidades de cada libro
+
+        if libros_ids:
+            # Crear el arriendo con la fecha de inicio y fin
+            nuevo_arriendo = Arriendo(cliente=request.user)
+            nuevo_arriendo.save()
+
+            # Crear los ítems de arriendo asociados
+            for i, libro_id in enumerate(libros_ids):
+                libro = LibroArr.objects.get(id=libro_id)
+                cantidad = int(cantidades[i])
+
+                if cantidad > libro.stock:
+                    messages.error(request, f'No hay suficiente stock para {libro.nom_libro}.')
+                    return redirect('ver_libros_arriendo')
+
+                # Crear un nuevo ítem de arriendo
+                ItemArriendo.objects.create(
+                    arriendo=nuevo_arriendo,
+                    libro=libro,
+                    cantidad=cantidad
+                )
+
+                # Reducir el stock del libro
+                libro.stock -= cantidad
+                libro.save()
+
+            messages.success(request, 'Arriendo creado exitosamente.')
+            return redirect('ver_arriendos')  # Redirigir al listado de arriendos o página de confirmación
+
+        else:
+            messages.error(request, 'Debe seleccionar al menos un libro para arrendar.')
+
+    return render(request, 'Arriendos.html', {'libros': libros})
 
 def CarritoPagina(request):
     return render(request, 'Carrito.html')

@@ -151,13 +151,13 @@ class Sub(models.Model):
         # Retorna True si la suscripción aún es válida
         return timezone.now().date() <= self.fecha_fin
 
+
 class Arriendo(models.Model):
     cliente = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     fecha_inicio = models.DateField(default=timezone.now)
     fecha_fin = models.DateField()
 
     def save(self, *args, **kwargs):
-        # Establece la fecha final 30 días después de la fecha de inicio
         if not self.fecha_fin:
             self.fecha_fin = self.fecha_inicio + timedelta(days=30)
         super(Arriendo, self).save(*args, **kwargs)
