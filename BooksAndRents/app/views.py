@@ -23,13 +23,8 @@ def Suscripciones(request):
 @login_required
 def Perfil(request):
     usuario = request.user
-
-    suscripcion = Sub.objects.filter(id_us=usuario).first()
-
-    return render(request, 'Perfil.html', {
-        'usuario': usuario,
-        'suscripcion': suscripcion
-    })
+    compras = Compra.objects.filter(cliente=usuario)
+    return render(request, 'Perfil.html', {'usuario': usuario, 'compras': compras})
 
 def ComprarLibros(request):
     libros = Libro.objects.all()
@@ -42,7 +37,7 @@ def Arriendos(request):
 
     if not suscripcion_activa:
         messages.error(request, 'Debe tener una suscripción activa para realizar un arriendo.')
-        return redirect('ver_suscripciones')  # Redirige a la página de suscripciones si no está suscrito
+        return redirect('Suscripciones')  # Redirige a la página de suscripciones si no está suscrito
 
     # Obtener los libros con stock disponible
     libros = LibroArr.objects.filter(stock__gt=0)
@@ -78,7 +73,7 @@ def Arriendos(request):
                 libro.save()
 
             messages.success(request, 'Arriendo creado exitosamente.')
-            return redirect('ver_arriendos')  # Redirigir al listado de arriendos o página de confirmación
+            return redirect('Perfil')  # Redirigir al listado de arriendos o página de confirmación
 
         else:
             messages.error(request, 'Debe seleccionar al menos un libro para arrendar.')

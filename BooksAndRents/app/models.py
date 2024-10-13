@@ -116,6 +116,17 @@ class Carrito(models.Model):
         total = sum([item.cantidad for item in items])
         return total
 
+    def realizar_pago(self):
+        items = self.itemcarrito_set.all()
+        for item in items:
+            Compra.objects.create(
+                cliente=self.cliente,
+                producto=item.producto,
+                cantidad=item.cantidad
+            )
+        # Eliminar todos los items del carrito después del pago
+        items.delete()
+
 class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE)
     producto = models.ForeignKey(Libro, on_delete=models.CASCADE)
@@ -169,3 +180,12 @@ class ItemArriendo(models.Model):
 
     def __str__(self):
         return f'{self.cantidad} x {self.libro.nom_libro}'
+
+class Compra(models.Model):
+    cliente = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    producto = models.ForeignKey(Libro, on_delete=models.CASCADE)
+    cantidad = models.IntegerField()
+    fecha_compra = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.producto.nom_libro} - {self.fecha_compra}"

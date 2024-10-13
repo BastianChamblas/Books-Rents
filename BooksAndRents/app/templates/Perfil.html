@@ -308,6 +308,16 @@
                     </div>
                     {% endif %}
                 </ul>
+                <div class="perfil-usuario-compras">
+                    <h3>Histórico de Compras</h3>
+                    <ul>
+                        {% for compra in compras %}
+                            <li>{{ compra.cantidad }} x {{ compra.producto.nom_libro }} - {{ compra.fecha_compra }}</li>
+                        {% empty %}
+                            <li>No has realizado ninguna compra aún.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
 
             <div class="redes-sociales">
