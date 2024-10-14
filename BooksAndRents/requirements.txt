@@ -5,3 +5,4 @@ django-crispy-forms
 django-colorfield
 django-rest-framework
 mysqlclient
+mercadopago
