@@ -543,7 +543,7 @@ class FormularioPrincipalDesign(tk.Tk):
 
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
         if file_path:
-            destino = r"C:\capstone\media\libros"
+            destino = r"C:\BooksAndRents\media\libros"
             
             if not os.path.exists(destino):
                 os.makedirs(destino)
