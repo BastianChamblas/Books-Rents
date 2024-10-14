@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from app.views import *
 from . import views
+from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -33,11 +34,12 @@ urlpatterns = [
     path('Patron', views.Patron, name='Patron'),
     path('registro', RegisterView.as_view(), name='registro'),
     path('ingreso', LoginView.as_view(), name='ingreso'),
-    path('carrito', views.ver_carrito, name='ver_carrito'),
+    path('ver_carrito', views.ver_carrito, name='ver_carrito'),
     path('carrito/agregar/<int:libro_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
     path('carrito/eliminar/<int:item_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('crear-suscripcion/<int:tipo_sub_id>/', views.crear_suscripcion, name='crear_suscripcion'),
     path('checkout/', views.checkout, name='checkout'),
-    path('payment/', views.payment_page, name='payment_page')
+    path('payment/', views.payment_page, name='payment_page'),
+    path('logout/', LogoutView.as_view(), name='logout'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

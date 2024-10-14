@@ -215,7 +215,7 @@ def checkout(request):
                 "title": item.producto.nom_libro,
                 "quantity": item.cantidad,
                 "unit_price": float(item.producto.precio),
-                "currency_id": "CLP"  #  moneda local
+                "currency_id": "CLP"  # moneda local
             } for item in items
         ],
         "payer": {
@@ -230,6 +230,17 @@ def checkout(request):
 
         # Verificar si el preference_id está presente en la respuesta
         if "id" in preference:
+            # Guardar los items en el historial de compras antes de eliminarlos del carrito
+            for item in items:
+                Compra.objects.create(
+                    cliente=request.user,
+                    producto=item.producto,
+                    cantidad=item.cantidad
+                )
+
+            # Eliminar los items del carrito
+            items.delete()
+
             return JsonResponse({"preference_id": preference["id"]})
         else:
             return JsonResponse({"error": "No se pudo crear la preferencia de pago"}, status=500)

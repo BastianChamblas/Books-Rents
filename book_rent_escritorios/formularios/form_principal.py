@@ -1,11 +1,65 @@
 import tkinter as tk
+from tkinter import messagebox
 from styles import apply_styles
 from tkinter import font, ttk, filedialog
 import math
-from config import COLOR_BARRA_SUPERIOR, COLOR_MENU_LATERAL, COLOR_CUERPO_PRINCIPAL, COLOR_MENU_CURSOR_ENCIMA
+from config import COLOR_BARRA_SUPERIOR, COLOR_MENU_LATERAL, COLOR_CUERPO_PRINCIPAL, COLOR_MENU_CURSOR_ENCIMA, conectar_db
 import util.util_ventana as util_ventana
 import util.util_imagenes as util_img
+from django.contrib.auth.hashers import check_password
+from django.conf import settings
+import tkinter as tk
+from tkinter import ttk, messagebox
+import mysql.connector
+from mysql.connector import Error
+import pyodbc
+import shutil
+import os
+from tkinter import filedialog
+from PIL import Image, ImageTk  # Instala Pillow si no lo tienes: pip install pillow
+import os  # Para verificar si la imagen existe
 
+
+
+# Configurar Django manualmente
+settings.configure(
+    PASSWORD_HASHERS=[
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    ]
+)
+
+def conectar_db():
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='dbacapstone'
+        )
+        if connection.is_connected():
+            return connection
+    except Error as e:
+        print(f"Error al conectar a la base de datos: {e}")
+    return None
+
+def obtener_hash_usuario(email):
+    conn = conectar_db()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password FROM app_customuser WHERE email = %s", (email,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if result:
+            return result[0]  # Extraer el primer valor de la tupla (el hash de la contraseña)
+    return None
+
+def verificar_contraseña(email, contraseña):
+    hash_almacenado = obtener_hash_usuario(email)
+    if hash_almacenado:
+        return check_password(contraseña, hash_almacenado)  # Verificar con Django
+    return False
 
 class FormularioPrincipalDesign(tk.Tk):
 
@@ -16,7 +70,12 @@ class FormularioPrincipalDesign(tk.Tk):
         apply_styles()
         self.crear_notebook()
         self.mostrar_login()
-
+        self.host = "localhost"
+        self.user = "root"
+        self.password = ""
+        self.database = "dbacapstone"
+        
+        
     def config_window(self):
         # Configuración inicial de la ventana
         self.title('Python GUI')
@@ -48,11 +107,11 @@ class FormularioPrincipalDesign(tk.Tk):
 
     def mostrar_login(self):
         # Crear el marco principal con el nuevo color
-        main_frame = tk.Frame(self.tab_login, bg="#1f2329")
+        main_frame = tk.Frame(self.tab_login, bg=COLOR_BARRA_SUPERIOR)
         main_frame.pack(padx=10, pady=10, fill='both', expand=True)
 
         # Crear un sub-marco para centrar el contenido
-        center_frame = tk.Frame(main_frame, bg="#1f2329")
+        center_frame = tk.Frame(main_frame, bg=COLOR_BARRA_SUPERIOR)
         center_frame.place(relx=0.5, rely=0.5, anchor='center')
 
         # Crear el marco del rectángulo con un color de fondo diferente
@@ -103,18 +162,41 @@ class FormularioPrincipalDesign(tk.Tk):
         tk.Label(rect_frame, bg="#2e3b4e").pack(pady=(0, 20))
 
     def ingresar(self):
-        # Función para manejar el ingreso
-        usuario = self.entry_usuario.get()
+        # Obtener los valores de usuario y contraseña
+        email = self.entry_usuario.get()
         contrasena = self.entry_contrasena.get()
-        if usuario == "admin" and contrasena == "admin":
-            self.notebook.tab(1, state='normal')
-            self.notebook.tab(0, state='disabled')
-            self.notebook.select(1)
-            self.mostrar_interfaz_principal()
-            self.mostrar_animacion_hexagono()
-        else:
-            print("Usuario o contraseña incorrectos")
 
+        try:
+            # Intentar conectar a la base de datos
+            connection = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='',
+                database='dbacapstone'
+            )
+            if connection.is_connected():
+                print("Conexión a la base de datos exitosa")
+                # Verificar la contraseña usando las funciones definidas
+                if verificar_contraseña(email, contrasena):
+                    print("Ingreso exitoso")
+                    self.notebook.tab(1, state='normal')
+                    self.notebook.tab(0, state='disabled')
+                    self.notebook.select(1)
+                    self.mostrar_interfaz_principal()
+                    self.mostrar_animacion_hexagono()
+                else:
+                    messagebox.showerror("Error de autenticación", "Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.")
+            else:
+                messagebox.showerror("Error de conexión", "No es posible establecer conexión entre el software y la base de datos. Contacte a su administrador.")
+        except Error as e:
+            if e.errno == 2003:
+                messagebox.showerror("Error de conexión", "No es posible establecer conexión entre el software y la base de datos. Contacte a su administrador.")
+            elif e.errno == 1045:
+                messagebox.showerror("Error de autenticación", "Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.")
+            else:
+                messagebox.showerror("Error", str(e))
+
+            
     def mostrar_animacion_hexagono(self):
         # Crear un canvas que cubra toda la ventana principal
         self.canvas_animacion = tk.Canvas(self, width=1024, height=600, bg="#1f2329")
@@ -220,11 +302,65 @@ class FormularioPrincipalDesign(tk.Tk):
         labelTitulo = tk.Label(self.cuerpo_principal, text="📊 Dashboard", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
         labelTitulo.pack(anchor='nw', padx=10, pady=(10, 0))
 
-    def mostrar_formulario_productos(self):
-        # Minimizar el menú lateral
-        self.toggle_panel()
+    def obtener_productos(self):
+        try:
+            # Conectar a la base de datos y obtener los productos
+            conexion = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            cursor = conexion.cursor()
+            cursor.execute("SELECT nom_libro, precio, stock, imagen FROM app_libro")
+            productos = cursor.fetchall()
+            cursor.close()
+            conexion.close()
+            return productos
+        except Exception as e:
+            print(f"Error al obtener los productos: {e}")
+            return []
 
-        # Limpiar el cuerpo principal
+    def mostrar_productos(self):
+        # Limpiar el frame de ver productos
+        for widget in self.frame_ver_productos.winfo_children():
+            widget.destroy()
+
+        # Obtener productos de la base de datos
+        productos = self.obtener_productos()
+
+        # Crear cartas para cada producto
+        for producto in productos:
+            nom_libro, precio, stock, imagen = producto
+            
+            # Crear un marco para cada carta
+            frame_carta = tk.Frame(self.frame_ver_productos, bg="#1f2329", relief="raised", borderwidth=2)
+            frame_carta.pack(pady=10, padx=10, fill='x')
+
+            # Mostrar imagen
+            if os.path.exists(imagen):
+                img = Image.open(imagen)
+                img = img.resize((100, 150))  # Redimensionar imagen
+                img_tk = ImageTk.PhotoImage(img)
+                label_img = tk.Label(frame_carta, image=img_tk, bg="#1f2329")
+                label_img.image = img_tk  # Guardar referencia
+                label_img.grid(row=0, column=0, rowspan=3, padx=10, pady=10)
+
+            # Mostrar nombre del libro
+            label_nombre = tk.Label(frame_carta, text=f"Nombre: {nom_libro}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
+            label_nombre.grid(row=0, column=1, sticky='w', padx=10)
+
+            # Mostrar precio
+            label_precio = tk.Label(frame_carta, text=f"Precio: ${precio}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
+            label_precio.grid(row=1, column=1, sticky='w', padx=10)
+
+            # Mostrar stock
+            label_stock = tk.Label(frame_carta, text=f"Stock: {stock}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
+            label_stock.grid(row=2, column=1, sticky='w', padx=10)
+
+
+    def mostrar_formulario_productos(self):
+        # Limpiar el cuerpo principal antes de agregar nuevo contenido
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
@@ -259,19 +395,61 @@ class FormularioPrincipalDesign(tk.Tk):
         notebook.add(frame_modificar_productos, text="Modificar Productos")
         notebook.add(frame_eliminar_productos, text="Eliminar Productos")
 
-        # Contenido de las pestañas (puedes personalizar esto según tus necesidades)
-        tk.Label(frame_ver_productos, text="Contenido de Ver Productos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
+        # Asignar el frame para ver productos
+        self.frame_ver_productos = frame_ver_productos
+
+        # Mostrar productos cuando se selecciona la pestaña "Ver Productos"
+        self.mostrar_productos()
+        
+        # Contenido adicional de otras pestañas (opcional)
         tk.Label(frame_modificar_productos, text="Contenido de Modificar Productos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
         tk.Label(frame_eliminar_productos, text="Contenido de Eliminar Productos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
 
-        # Formulario para agregar productos
+        # Formulario para agregar productos (si ya lo tienes)
         self.crear_formulario_agregar_productos(frame_agregar_productos)
 
-        # Vincular el evento de cambio de pestaña para actualizar los estilos
-        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
     def configurar_estilo_entry(self, entry):
         entry.configure(bg="#1b2838", fg="#c7d5e0", insertbackground="#c7d5e0", highlightthickness=2, highlightbackground="#c7d5e0", highlightcolor="#c7d5e0", relief="flat")
+
+    def obtener_generos(self):
+        try:
+            # Conectar a la base de datos MySQL
+            conexion = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            cursor = conexion.cursor()
+            cursor.execute("SELECT nombre FROM app_generolib")
+            generos = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            conexion.close()  # Cierra la conexión después de usarla
+            return generos
+        except Exception as e:
+            print(f"Error al obtener los géneros: {e}")
+            return []
+        
+    def obtener_autores(self):
+        try:
+            # Conectar a la base de datos MySQL
+            conexion = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            cursor = conexion.cursor()
+            cursor.execute("SELECT nombre_autor FROM app_autor")
+            autores = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            conexion.close()  # Cierra la conexión después de usarla
+            return autores
+        except Exception as e:
+            print(f"Error al obtener los autores: {e}")
+            return []
+
 
     def crear_formulario_agregar_productos(self, frame):
         # Crear el marco principal con el nuevo color
@@ -285,7 +463,7 @@ class FormularioPrincipalDesign(tk.Tk):
         style = ttk.Style()
         style.configure("TLabel", font=('Segoe UI', 12), background="#1f2329", foreground="#c7d5e0")
         style.configure("Custom.TButton", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="raised")
-        style.map("Custom.TButton", background=[("active", "#1b2838")])  # Quitar el brillo al pasar el mouse
+        style.map("Custom.TButton", background=[("active", "#1b2838")])
         style.configure("Custom.TCombobox", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
         style.configure("Custom.TEntry", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
 
@@ -295,60 +473,155 @@ class FormularioPrincipalDesign(tk.Tk):
 
         # Etiquetas y entradas para Nombre del Libro, Precio y Stock
         label_nombre = ttk.Label(fields_frame, text="Nombre del Libro:")
-        label_nombre.grid(row=0, column=0, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_nombre = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_nombre.grid(row=1, column=0, padx=10, pady=10, sticky='w')  # Margen a cada columna y fila
+        label_nombre.grid(row=0, column=0, padx=10, pady=(40, 5), sticky='w')
+        self.entry_nombre = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
+        self.entry_nombre.grid(row=1, column=0, padx=10, pady=10, sticky='w')
 
         label_precio = ttk.Label(fields_frame, text="Precio:")
-        label_precio.grid(row=0, column=1, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_precio = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_precio.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        label_precio.grid(row=0, column=1, padx=10, pady=(40, 5), sticky='w')
+        self.entry_precio = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
+        self.entry_precio.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
         label_stock = ttk.Label(fields_frame, text="Stock:")
-        label_stock.grid(row=0, column=2, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_stock = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_stock.grid(row=1, column=2, padx=10, pady=10, sticky='w')
+        label_stock.grid(row=0, column=2, padx=10, pady=(40, 5), sticky='w')
+        self.entry_stock = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
+        self.entry_stock.grid(row=1, column=2, padx=10, pady=10, sticky='w')
+
+        # Obtener autores de la base de datos
+        autores = self.obtener_autores()
 
         # Etiquetas y entradas para Autor y Género
         label_autor = ttk.Label(fields_frame, text="Autor:")
         label_autor.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-        combo_autor = ttk.Combobox(fields_frame, values=["Autor 1", "Autor 2"], width=30, style="Custom.TCombobox")
-        combo_autor.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        self.combo_autor = ttk.Combobox(fields_frame, values=autores, width=30, style="Custom.TCombobox")  # Guardar referencia
+        self.combo_autor.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+
+        # Obtener géneros de la base de datos
+        generos = self.obtener_generos()
 
         label_genero = ttk.Label(fields_frame, text="Género:")
         label_genero.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-        combo_genero = ttk.Combobox(fields_frame, values=["Ciencia Ficción", "Thriller"], width=30, style="Custom.TCombobox")
-        combo_genero.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        self.combo_genero = ttk.Combobox(fields_frame, values=generos, width=30, style="Custom.TCombobox")  # Guardar referencia
+        self.combo_genero.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
         # Campo Imagen
         label_imagen = ttk.Label(fields_frame, text="Imagen:")
         label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen, style="Custom.TButton")
+        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_productos, style="Custom.TButton")
         button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
         # Botones Enviar y Limpiar
         button_frame = tk.Frame(form_frame, bg="#1f2329")
         button_frame.pack(pady=10)
 
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario, style="Custom.TButton")
+        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_productos, style="Custom.TButton")
         button_enviar.pack(side=tk.LEFT, padx=5)
 
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario, style="Custom.TButton")
+        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_productos, style="Custom.TButton")
         button_limpiar.pack(side=tk.LEFT, padx=5)
 
-    def cargar_imagen(self):
-        # Función para cargar una imagen desde el computador
+
+
+    def limpiar_formulario_agregar_productos(self):
+        # Limpiar las entradas de texto
+        self.entry_nombre.delete(0, tk.END)
+        self.entry_precio.delete(0, tk.END)
+        self.entry_stock.delete(0, tk.END)
+
+        # Limpiar los ComboBoxes
+        self.combo_autor.set('') 
+        self.combo_genero.set('')  
+        
+        print("Formulario limpiado")
+
+    def cargar_imagen_agregar_productos(self):
+        nombre_libro = self.entry_nombre.get()
+
+        if not nombre_libro:
+            print("Por favor, ingrese el nombre del libro antes de cargar la imagen.")
+            return
+
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
         if file_path:
-            print(f"Imagen cargada: {file_path}")
+            destino = r"C:\capstone\media\libros"
+            
+            if not os.path.exists(destino):
+                os.makedirs(destino)
+            
+            nombre_libro_normalizado = "".join(x if x.isalnum() else "_" for x in nombre_libro)
+            extension = os.path.splitext(file_path)[1]
+            destino_final = os.path.join(destino, f"{nombre_libro_normalizado}{extension}")
 
-    def enviar_formulario(self):
-        # Función para manejar el envío del formulario
-        print("Formulario enviado")
+            try:
+                shutil.copy(file_path, destino_final)
+                self.ruta_imagen = destino_final
+                print(f"Imagen guardada correctamente: {destino_final}")
+            except Exception as e:
+                print(f"Error al guardar la imagen: {e}")
 
-    def limpiar_formulario(self):
-        # Función para manejar la limpieza del formulario
-        print("Formulario limpiado")
+
+    def enviar_formulario_agregar_productos(self):
+        # Capturar los valores de los campos del formulario
+        nombre_libro = self.entry_nombre.get()
+        precio = self.entry_precio.get()
+        stock = self.entry_stock.get()
+        nombre_autor = self.combo_autor.get()
+        nombre_genero = self.combo_genero.get()
+
+        # Verificar si los campos no están vacíos
+        if not (nombre_libro and precio and stock and nombre_autor and nombre_genero):
+            print("Por favor, complete todos los campos.")
+            return
+
+        try:
+            # Conectar a la base de datos MySQL
+            conexion = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            cursor = conexion.cursor()
+
+            # Obtener el ID del autor a partir del nombre
+            cursor.execute("SELECT id FROM app_autor WHERE nombre_autor = %s", (nombre_autor,))
+            autor_id = cursor.fetchone()
+            if autor_id is None:
+                print(f"No se encontró el autor: {nombre_autor}")
+                return
+            autor_id = autor_id[0]
+
+            # Obtener el ID del género a partir del nombre
+            cursor.execute("SELECT id FROM app_generolib WHERE nombre = %s", (nombre_genero,))
+            genero_id = cursor.fetchone()
+            if genero_id is None:
+                print(f"No se encontró el género: {nombre_genero}")
+                return
+            genero_id = genero_id[0]
+
+            # Verificar si se ha cargado una imagen
+            if hasattr(self, 'ruta_imagen'):
+                imagen = self.ruta_imagen  # Usar la ruta de la imagen cargada
+            else:
+                imagen = "default_image.jpg"  # Si no hay imagen cargada, usar un valor por defecto
+
+            # Realizar la inserción en la tabla app_libro
+            insert_query = """
+                INSERT INTO app_libro (nom_libro, precio, stock, imagen, id_autor_id, id_genero_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (nombre_libro, precio, stock, imagen, autor_id, genero_id))
+
+            # Confirmar los cambios
+            conexion.commit()
+
+            print("Producto agregado correctamente")
+
+            # Limpiar el formulario
+            self.limpiar_formulario_agregar_productos()
+
+        except Exception as e:
+            print(f"Error al agregar el producto: {e}")
 
     def mostrar_formulario_mantenedor_arriendos(self):
         # Minimizar el menú lateral
@@ -451,30 +724,30 @@ class FormularioPrincipalDesign(tk.Tk):
         # Campo Imagen
         label_imagen = ttk.Label(fields_frame, text="Imagen:")
         label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen, style="Custom.TButton")
+        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_arriendos, style="Custom.TButton")
         button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
         # Botones Enviar y Limpiar
         button_frame = tk.Frame(form_frame, bg="#1f2329")
         button_frame.pack(pady=10)
 
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario, style="Custom.TButton")
+        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_arriendos, style="Custom.TButton")
         button_enviar.pack(side=tk.LEFT, padx=5)
 
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario, style="Custom.TButton")
+        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_arriendos, style="Custom.TButton")
         button_limpiar.pack(side=tk.LEFT, padx=5)
 
-    def cargar_imagen(self):
+    def cargar_imagen_agregar_arriendos(self):
         # Función para cargar una imagen desde el computador
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
         if file_path:
             print(f"Imagen cargada: {file_path}")
 
-    def enviar_formulario(self):
+    def enviar_formulario_agregar_arriendos(self):
         # Función para manejar el envío del formulario
         print("Formulario enviado")
 
-    def limpiar_formulario(self):
+    def limpiar_formulario_agregar_arriendos(self):
         # Función para manejar la limpieza del formulario
         print("Formulario limpiado")
 
@@ -579,30 +852,30 @@ class FormularioPrincipalDesign(tk.Tk):
         # Campo Imagen
         label_imagen = ttk.Label(fields_frame, text="Imagen:")
         label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen, style="Custom.TButton")
+        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_usuarios, style="Custom.TButton")
         button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
         # Botones Enviar y Limpiar
         button_frame = tk.Frame(form_frame, bg="#1f2329")
         button_frame.pack(pady=10)
 
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario, style="Custom.TButton")
+        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_usuarios, style="Custom.TButton")
         button_enviar.pack(side=tk.LEFT, padx=5)
 
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario, style="Custom.TButton")
+        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_usuarios, style="Custom.TButton")
         button_limpiar.pack(side=tk.LEFT, padx=5)
 
-    def cargar_imagen(self):
+    def cargar_imagen_agregar_usuarios(self):
         # Función para cargar una imagen desde el computador
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
         if file_path:
             print(f"Imagen cargada: {file_path}")
 
-    def enviar_formulario(self):
+    def enviar_formulario_agregar_usuarios(self):
         # Función para manejar el envío del formulario
         print("Formulario enviado")
 
-    def limpiar_formulario(self):
+    def limpiar_formulario_agregar_usuarios(self):
         # Función para manejar la limpieza del formulario
         print("Formulario limpiado")
 
