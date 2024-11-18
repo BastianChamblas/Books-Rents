@@ -1,33 +1,47 @@
-import tkinter as tk
-from tkinter import messagebox
-from styles import apply_styles
-from tkinter import font, ttk, filedialog
 import math
+import os
+import shutil
+import threading
+import requests
+import tkinter as tk
+from tkinter import font, messagebox, ttk, filedialog
+from io import BytesIO
+from PIL import Image, ImageTk
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from mysql.connector import Error
+import mysql.connector
+import pyodbc
+from django.conf import settings
+from django.contrib.auth.hashers import check_password
 from config import COLOR_BARRA_SUPERIOR, COLOR_MENU_LATERAL, COLOR_CUERPO_PRINCIPAL, COLOR_MENU_CURSOR_ENCIMA, conectar_db
 import util.util_ventana as util_ventana
 import util.util_imagenes as util_img
-from django.contrib.auth.hashers import check_password
-from django.conf import settings
-import tkinter as tk
-from tkinter import ttk, messagebox
+from formularios.ver_productos import VerProductos
+from styles import apply_styles
+from formularios.agregar_productos import AgregarProductosForm
+from formularios.animacion import mostrar_animacion_hexagono
+from formularios.ver_arriendos import VerArriendos
+from formularios.agregar_arriendos import AgregarArriendosForm
+from formularios.ver_usuarios import VerUsuarios
+from formularios.agregar_usuarios import AgregarUsuariosForm
+from formularios.dashboard_1 import cargar_contenido_dashboard_1
+from formularios.dashboard_2 import cargar_contenido_dashboard_2
+from formularios.dashboard_3 import cargar_contenido_dashboard_3
 import mysql.connector
 from mysql.connector import Error
-import pyodbc
-import shutil
-import os
-from tkinter import filedialog
-from PIL import Image, ImageTk  # Instala Pillow si no lo tienes: pip install pillow
-import os  # Para verificar si la imagen existe
+from datetime import date, datetime
 
 
 
-# Configurar Django manualmente
-settings.configure(
-    PASSWORD_HASHERS=[
-        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-    ]
-)
+
+if not settings.configured:
+    settings.configure(
+        PASSWORD_HASHERS=[
+            'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+            'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        ]
+    )
 
 def conectar_db():
     try:
@@ -65,22 +79,46 @@ class FormularioPrincipalDesign(tk.Tk):
 
     def __init__(self):
         super().__init__()
+        apply_styles()
+        print("Estilos disponibles:", ttk.Style().theme_names())
+        
+        # Configuración general
         self.perfil = util_img.leer_imagen("./imagenes/logo.png", (100, 100))
         self.config_window()
-        apply_styles()
         self.crear_notebook()
+        self.paneles()  # Asegura que `cuerpo_principal` esté creado
+        
+        # Configuración de la base de datos (inicializar `db_config` antes de usarlo)
+        self.db_config = {
+            'host': 'localhost',
+            'user': 'root',
+            'password': '',
+            'database': 'dbacapstone'
+        }
+        
+        # Llama a `mostrar_formulario_productos` para aplicar el estilo y luego oculta
+        self.mostrar_formulario_productos()  
+        self.cuerpo_principal.pack_forget()
+
+        # Carga el login o la interfaz principal
         self.mostrar_login()
+
+        # Configuración adicional de atributos
         self.host = "localhost"
         self.user = "root"
         self.password = ""
         self.database = "dbacapstone"
-        
+        self.pagina_actual = 0
+        self.productos_por_pagina = 2
+        self.ver_productos = None
         
     def config_window(self):
         # Configuración inicial de la ventana
         self.title('Python GUI')
-        w, h = 1024, 600        
+        w, h = 1280, 720  # Aumentar el tamaño de la ventana
+        # Centrar la ventana en la pantalla
         self.geometry(f"{w}x{h}+{(self.winfo_screenwidth() - w) // 2}+{(self.winfo_screenheight() - h) // 2}")
+
 
     def crear_notebook(self):
         # Crear el estilo para el notebook
@@ -154,20 +192,15 @@ class FormularioPrincipalDesign(tk.Tk):
         button_ingresar = ttk.Button(button_frame, text="Ingresar", command=self.ingresar, style="CustomLogin.TButton")
         button_ingresar.pack(side=tk.LEFT, padx=5)
 
-        label_olvidaste_contrasena = tk.Label(button_frame, text="¿Olvidaste tu contraseña?", fg="#c7d5e0", bg="#2e3b4e", cursor="hand2", font=('Segoe UI', 10, 'underline'))
-        label_olvidaste_contrasena.pack(side=tk.LEFT, padx=5)
-        label_olvidaste_contrasena.bind("<Button-1>", self.olvidaste_contrasena)
-
         # Margen abajo de los botones
         tk.Label(rect_frame, bg="#2e3b4e").pack(pady=(0, 20))
 
+    # Dentro de la clase FormularioPrincipalDesign o similar
     def ingresar(self):
-        # Obtener los valores de usuario y contraseña
         email = self.entry_usuario.get()
         contrasena = self.entry_contrasena.get()
 
         try:
-            # Intentar conectar a la base de datos
             connection = mysql.connector.connect(
                 host='localhost',
                 user='root',
@@ -176,14 +209,13 @@ class FormularioPrincipalDesign(tk.Tk):
             )
             if connection.is_connected():
                 print("Conexión a la base de datos exitosa")
-                # Verificar la contraseña usando las funciones definidas
                 if verificar_contraseña(email, contrasena):
                     print("Ingreso exitoso")
                     self.notebook.tab(1, state='normal')
                     self.notebook.tab(0, state='disabled')
                     self.notebook.select(1)
                     self.mostrar_interfaz_principal()
-                    self.mostrar_animacion_hexagono()
+                    mostrar_animacion_hexagono(self)
                 else:
                     messagebox.showerror("Error de autenticación", "Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.")
             else:
@@ -195,13 +227,6 @@ class FormularioPrincipalDesign(tk.Tk):
                 messagebox.showerror("Error de autenticación", "Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.")
             else:
                 messagebox.showerror("Error", str(e))
-
-            
-    def mostrar_animacion_hexagono(self):
-        # Crear un canvas que cubra toda la ventana principal
-        self.canvas_animacion = tk.Canvas(self, width=1024, height=600, bg="#1f2329")
-        self.canvas_animacion.place(x=0, y=0, relwidth=1, relheight=1)
-        self.hexagon = Hexagon(self.canvas_animacion)
 
     def olvidaste_contrasena(self, event):
         # Función para manejar el evento de olvidar contraseña
@@ -241,28 +266,43 @@ class FormularioPrincipalDesign(tk.Tk):
         ancho_menu = 30
         alto_menu = 2
         font_awesome = font.Font(family='FontAwesome', size=15)
-         
+        
         # Etiqueta de perfil
         self.labelPerfil = tk.Label(self.menu_lateral, image=self.perfil, bg=COLOR_MENU_LATERAL)
         self.labelPerfil.pack(side=tk.TOP, pady=10)
 
-        # Botones del menú lateral
-        self.buttonDashBoard = tk.Button(self.menu_lateral, command=self.mostrar_dashboard)        
-        self.buttonProductos = tk.Button(self.menu_lateral, command=self.mostrar_formulario_productos)        
-        self.buttonUsuarios = tk.Button(self.menu_lateral, command=self.mostrar_formulario_usuarios)
-        self.buttonArriendos = tk.Button(self.menu_lateral, command=self.mostrar_formulario_arriendos)        
-        self.buttonMantenedorArriendos = tk.Button(self.menu_lateral, command=self.mostrar_formulario_mantenedor_arriendos)  # Nuevo botón
+        # Declarar todos los botones como atributos de la clase
+        self.buttonDashBoard = tk.Button(self.menu_lateral)
+        self.buttonProductos = tk.Button(self.menu_lateral)
+        self.buttonUsuarios = tk.Button(self.menu_lateral)
+        self.buttonArriendos = tk.Button(self.menu_lateral)  # Declarado correctamente aquí
+        self.buttonMantenedorArriendos = tk.Button(self.menu_lateral)
 
+        # Lista de botones con sus respectivas configuraciones
         buttons_info = [
-            ("Dashboard", "📊", self.buttonDashBoard),
-            ("Mantenedor Productos", "📚", self.buttonProductos),
-            ("Mantenedor Usuarios", "👥", self.buttonUsuarios),
-            ("Seguimiento Arriendos", "📅", self.buttonArriendos),
-            ("Mantenedor Arriendos", "🏠", self.buttonMantenedorArriendos)  # Nuevo botón
+            ("Dashboard", "📊", self.buttonDashBoard, self.mostrar_dashboard),
+            ("Mantenedor Productos", "📚", self.buttonProductos, self.mostrar_formulario_productos),
+            ("Mantenedor Usuarios", "👥", self.buttonUsuarios, self.mostrar_formulario_usuarios),
+            ("Seguimiento Arriendos", "📅", self.buttonArriendos, self.mostrar_seguimiento_arriendos),  # Comando correcto
+            ("Mantenedor Arriendos", "🏠", self.buttonMantenedorArriendos, self.mostrar_formulario_arriendos)
         ]
 
-        for text, icon, button in buttons_info:
-            self.configurar_boton_menu(button, text, icon, font_awesome, ancho_menu, alto_menu)                    
+        # Configurar y empaquetar los botones
+        for text, icon, button, command in buttons_info:
+            button.config(
+                text=f"  {icon}    {text}",
+                anchor="w",
+                font=font_awesome,
+                bd=0,
+                bg=COLOR_MENU_LATERAL,
+                fg="white",
+                width=ancho_menu,
+                height=alto_menu,
+                command=command
+            )
+            button.pack(side=tk.TOP)
+            self.bind_hover_events(button)
+
 
     def configurar_boton_menu(self, button, text, icon, font_awesome, ancho_menu, alto_menu):
         button.config(text=f"  {icon}    {text}", anchor="w", font=font_awesome,
@@ -287,8 +327,14 @@ class FormularioPrincipalDesign(tk.Tk):
         # Alternar visibilidad del menú lateral
         if self.menu_lateral.winfo_ismapped():
             self.menu_lateral.pack_forget()
+            # Re-empaquetar cuerpo_principal para ocupar todo el espacio
+            self.cuerpo_principal.pack_forget()
+            self.cuerpo_principal.pack(side=tk.LEFT, fill='both', expand=True)
         else:
-            self.menu_lateral.pack(side=tk.LEFT, fill='y')
+            self.menu_lateral.pack(side=tk.LEFT, fill='both', expand=False)
+            # Re-empaquetar cuerpo_principal para estar al lado derecho
+            self.cuerpo_principal.pack_forget()
+            self.cuerpo_principal.pack(side=tk.RIGHT, fill='both', expand=True)
 
     def mostrar_dashboard(self):
         # Minimizar el menú lateral
@@ -298,65 +344,40 @@ class FormularioPrincipalDesign(tk.Tk):
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
+        # Crear un marco para agregar márgenes
+        frame_notebook = tk.Frame(self.cuerpo_principal, bg="#1f2329")
+        frame_notebook.pack(fill='both', expand=True, padx=10, pady=10)
+
         # Título del dashboard
-        labelTitulo = tk.Label(self.cuerpo_principal, text="📊 Dashboard", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
-        labelTitulo.pack(anchor='nw', padx=10, pady=(10, 0))
+        labelTitulo = tk.Label(frame_notebook, text="📊 Dashboard", font=("Roboto", 20), bg="#2a3138", fg="white", anchor='w')
+        labelTitulo.pack(fill='x', pady=(0, 0))
 
-    def obtener_productos(self):
-        try:
-            # Conectar a la base de datos y obtener los productos
-            conexion = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            cursor = conexion.cursor()
-            cursor.execute("SELECT nom_libro, precio, stock, imagen FROM app_libro")
-            productos = cursor.fetchall()
-            cursor.close()
-            conexion.close()
-            return productos
-        except Exception as e:
-            print(f"Error al obtener los productos: {e}")
-            return []
+        # Crear el notebook para las pestañas
+        notebook = ttk.Notebook(frame_notebook, style='TNotebook')
+        notebook.pack(fill='both', expand=True, padx=0, pady=0)
 
-    def mostrar_productos(self):
-        # Limpiar el frame de ver productos
-        for widget in self.frame_ver_productos.winfo_children():
-            widget.destroy()
+        # Crear los frames para cada pestaña
+        frame_dashboard_1 = tk.Frame(notebook, bg="#1f2329")
+        frame_dashboard_2 = tk.Frame(notebook, bg="#1f2329")
+        frame_dashboard_3 = tk.Frame(notebook, bg="#1f2329")
 
-        # Obtener productos de la base de datos
-        productos = self.obtener_productos()
+        # Agregar los frames al notebook
+        notebook.add(frame_dashboard_1, text="Dashboard 1")
+        notebook.add(frame_dashboard_2, text="Dashboard 2")
+        notebook.add(frame_dashboard_3, text="Dashboard 3")
 
-        # Crear cartas para cada producto
-        for producto in productos:
-            nom_libro, precio, stock, imagen = producto
-            
-            # Crear un marco para cada carta
-            frame_carta = tk.Frame(self.frame_ver_productos, bg="#1f2329", relief="raised", borderwidth=2)
-            frame_carta.pack(pady=10, padx=10, fill='x')
+        # Cargar contenido en cada frame desde los archivos
+        cargar_contenido_dashboard_1(frame_dashboard_1)
+        cargar_contenido_dashboard_2(frame_dashboard_2)
+        cargar_contenido_dashboard_3(frame_dashboard_3)
 
-            # Mostrar imagen
-            if os.path.exists(imagen):
-                img = Image.open(imagen)
-                img = img.resize((100, 150))  # Redimensionar imagen
-                img_tk = ImageTk.PhotoImage(img)
-                label_img = tk.Label(frame_carta, image=img_tk, bg="#1f2329")
-                label_img.image = img_tk  # Guardar referencia
-                label_img.grid(row=0, column=0, rowspan=3, padx=10, pady=10)
+        # Enlazar el evento para manejar cambios de pestaña
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_selected_dashboard)
 
-            # Mostrar nombre del libro
-            label_nombre = tk.Label(frame_carta, text=f"Nombre: {nom_libro}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
-            label_nombre.grid(row=0, column=1, sticky='w', padx=10)
-
-            # Mostrar precio
-            label_precio = tk.Label(frame_carta, text=f"Precio: ${precio}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
-            label_precio.grid(row=1, column=1, sticky='w', padx=10)
-
-            # Mostrar stock
-            label_stock = tk.Label(frame_carta, text=f"Stock: {stock}", bg="#1f2329", fg="#c7d5e0", font=("Roboto", 12))
-            label_stock.grid(row=2, column=1, sticky='w', padx=10)
+    def on_tab_selected_dashboard(self, event):
+        # Aquí puedes agregar la lógica para cuando se cambia de pestaña
+        selected_tab = event.widget.index("current")
+        print("Pestaña seleccionada en Dashboard:", selected_tab)
 
 
     def mostrar_formulario_productos(self):
@@ -364,7 +385,7 @@ class FormularioPrincipalDesign(tk.Tk):
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
-        # Crear un marco para agregar márgenes
+        # Crear un contenedor sin márgenes adicionales para el notebook
         frame_notebook = tk.Frame(self.cuerpo_principal, bg=COLOR_MENU_LATERAL)
         frame_notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
@@ -372,262 +393,44 @@ class FormularioPrincipalDesign(tk.Tk):
         labelTitulo = tk.Label(frame_notebook, text="📚 Mantenedor Productos", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
         labelTitulo.pack(anchor='nw', padx=0, pady=(0, 0))
 
-        # Crear el estilo para el notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('TNotebook', background=COLOR_MENU_LATERAL, borderwidth=0)
-        style.configure('TNotebook.Tab', background=COLOR_MENU_LATERAL, foreground='#fff', font=("Roboto", 10), padding=[10, 5])
-        style.map('TNotebook.Tab', background=[('selected', COLOR_MENU_LATERAL), ('!selected', '#555555')], foreground=[('selected', '#fff'), ('!selected', '#ccc')])
-        style.configure('TNotebook.Tab', borderwidth=0, relief='flat', padding=[10, 5], tabmargins=[0, 0, 0, 0])
-
-        # Crear el notebook (pestañas)
+        # Crear el notebook (pestañas) sin márgenes adicionales
         notebook = ttk.Notebook(frame_notebook, style='TNotebook')
-        notebook.pack(fill='both', expand=True)
+        notebook.pack(fill='both', expand=True, padx=0, pady=0)
 
         # Crear las pestañas
         frame_ver_productos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
         frame_agregar_productos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_modificar_productos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_eliminar_productos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
 
         notebook.add(frame_ver_productos, text="Ver Productos")
         notebook.add(frame_agregar_productos, text="Agregar Productos")
-        notebook.add(frame_modificar_productos, text="Modificar Productos")
-        notebook.add(frame_eliminar_productos, text="Eliminar Productos")
 
         # Asignar el frame para ver productos
         self.frame_ver_productos = frame_ver_productos
 
+        # Inicializa self.ver_productos solo si VerProductos está disponible
+        if VerProductos:
+            self.ver_productos = VerProductos(self.frame_ver_productos)
+
         # Mostrar productos cuando se selecciona la pestaña "Ver Productos"
-        self.mostrar_productos()
-        
-        # Contenido adicional de otras pestañas (opcional)
-        tk.Label(frame_modificar_productos, text="Contenido de Modificar Productos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_eliminar_productos, text="Contenido de Eliminar Productos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_selected_usuarios)
 
-        # Formulario para agregar productos (si ya lo tienes)
-        self.crear_formulario_agregar_productos(frame_agregar_productos)
+        # **Integración del Formulario de Agregar Productos**
+        # Instanciar la clase AgregarProductosForm sin usar pack
+        agregar_productos_form = AgregarProductosForm(frame_agregar_productos, self.db_config)
 
-
-    def configurar_estilo_entry(self, entry):
-        entry.configure(bg="#1b2838", fg="#c7d5e0", insertbackground="#c7d5e0", highlightthickness=2, highlightbackground="#c7d5e0", highlightcolor="#c7d5e0", relief="flat")
-
-    def obtener_generos(self):
-        try:
-            # Conectar a la base de datos MySQL
-            conexion = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            cursor = conexion.cursor()
-            cursor.execute("SELECT nombre FROM app_generolib")
-            generos = [row[0] for row in cursor.fetchall()]
-            cursor.close()
-            conexion.close()  # Cierra la conexión después de usarla
-            return generos
-        except Exception as e:
-            print(f"Error al obtener los géneros: {e}")
-            return []
-        
-    def obtener_autores(self):
-        try:
-            # Conectar a la base de datos MySQL
-            conexion = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            cursor = conexion.cursor()
-            cursor.execute("SELECT nombre_autor FROM app_autor")
-            autores = [row[0] for row in cursor.fetchall()]
-            cursor.close()
-            conexion.close()  # Cierra la conexión después de usarla
-            return autores
-        except Exception as e:
-            print(f"Error al obtener los autores: {e}")
-            return []
-
-
-    def crear_formulario_agregar_productos(self, frame):
-        # Crear el marco principal con el nuevo color
-        main_frame = tk.Frame(frame, bg="#1f2329")
-        main_frame.pack(padx=10, pady=10, fill='both', expand=True)
-
-        # Crear el formulario para agregar productos dentro del marco principal
-        form_frame = tk.Frame(main_frame, bg="#1f2329")
-        form_frame.pack(padx=10, pady=10, fill='both', expand=True)
-
-        style = ttk.Style()
-        style.configure("TLabel", font=('Segoe UI', 12), background="#1f2329", foreground="#c7d5e0")
-        style.configure("Custom.TButton", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="raised")
-        style.map("Custom.TButton", background=[("active", "#1b2838")])
-        style.configure("Custom.TCombobox", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
-        style.configure("Custom.TEntry", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
-
-        # Crear un frame para los campos en la misma fila
-        fields_frame = tk.Frame(form_frame, bg="#1f2329")
-        fields_frame.pack(pady=10)
-
-        # Etiquetas y entradas para Nombre del Libro, Precio y Stock
-        label_nombre = ttk.Label(fields_frame, text="Nombre del Libro:")
-        label_nombre.grid(row=0, column=0, padx=10, pady=(40, 5), sticky='w')
-        self.entry_nombre = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
-        self.entry_nombre.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-
-        label_precio = ttk.Label(fields_frame, text="Precio:")
-        label_precio.grid(row=0, column=1, padx=10, pady=(40, 5), sticky='w')
-        self.entry_precio = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
-        self.entry_precio.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-        label_stock = ttk.Label(fields_frame, text="Stock:")
-        label_stock.grid(row=0, column=2, padx=10, pady=(40, 5), sticky='w')
-        self.entry_stock = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")  # Guardar referencia
-        self.entry_stock.grid(row=1, column=2, padx=10, pady=10, sticky='w')
-
-        # Obtener autores de la base de datos
-        autores = self.obtener_autores()
-
-        # Etiquetas y entradas para Autor y Género
-        label_autor = ttk.Label(fields_frame, text="Autor:")
-        label_autor.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-        self.combo_autor = ttk.Combobox(fields_frame, values=autores, width=30, style="Custom.TCombobox")  # Guardar referencia
-        self.combo_autor.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-
-        # Obtener géneros de la base de datos
-        generos = self.obtener_generos()
-
-        label_genero = ttk.Label(fields_frame, text="Género:")
-        label_genero.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-        self.combo_genero = ttk.Combobox(fields_frame, values=generos, width=30, style="Custom.TCombobox")  # Guardar referencia
-        self.combo_genero.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-        # Campo Imagen
-        label_imagen = ttk.Label(fields_frame, text="Imagen:")
-        label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_productos, style="Custom.TButton")
-        button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
-
-        # Botones Enviar y Limpiar
-        button_frame = tk.Frame(form_frame, bg="#1f2329")
-        button_frame.pack(pady=10)
-
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_productos, style="Custom.TButton")
-        button_enviar.pack(side=tk.LEFT, padx=5)
-
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_productos, style="Custom.TButton")
-        button_limpiar.pack(side=tk.LEFT, padx=5)
-
-
-
-    def limpiar_formulario_agregar_productos(self):
-        # Limpiar las entradas de texto
-        self.entry_nombre.delete(0, tk.END)
-        self.entry_precio.delete(0, tk.END)
-        self.entry_stock.delete(0, tk.END)
-
-        # Limpiar los ComboBoxes
-        self.combo_autor.set('') 
-        self.combo_genero.set('')  
-        
-        print("Formulario limpiado")
-
-    def cargar_imagen_agregar_productos(self):
-        nombre_libro = self.entry_nombre.get()
-
-        if not nombre_libro:
-            print("Por favor, ingrese el nombre del libro antes de cargar la imagen.")
-            return
-
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
-        if file_path:
-            destino = r"C:\BooksAndRents\media\libros"
-            
-            if not os.path.exists(destino):
-                os.makedirs(destino)
-            
-            nombre_libro_normalizado = "".join(x if x.isalnum() else "_" for x in nombre_libro)
-            extension = os.path.splitext(file_path)[1]
-            destino_final = os.path.join(destino, f"{nombre_libro_normalizado}{extension}")
-
-            try:
-                shutil.copy(file_path, destino_final)
-                self.ruta_imagen = destino_final
-                print(f"Imagen guardada correctamente: {destino_final}")
-            except Exception as e:
-                print(f"Error al guardar la imagen: {e}")
-
-
-    def enviar_formulario_agregar_productos(self):
-        # Capturar los valores de los campos del formulario
-        nombre_libro = self.entry_nombre.get()
-        precio = self.entry_precio.get()
-        stock = self.entry_stock.get()
-        nombre_autor = self.combo_autor.get()
-        nombre_genero = self.combo_genero.get()
-
-        # Verificar si los campos no están vacíos
-        if not (nombre_libro and precio and stock and nombre_autor and nombre_genero):
-            print("Por favor, complete todos los campos.")
-            return
-
-        try:
-            # Conectar a la base de datos MySQL
-            conexion = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            cursor = conexion.cursor()
-
-            # Obtener el ID del autor a partir del nombre
-            cursor.execute("SELECT id FROM app_autor WHERE nombre_autor = %s", (nombre_autor,))
-            autor_id = cursor.fetchone()
-            if autor_id is None:
-                print(f"No se encontró el autor: {nombre_autor}")
-                return
-            autor_id = autor_id[0]
-
-            # Obtener el ID del género a partir del nombre
-            cursor.execute("SELECT id FROM app_generolib WHERE nombre = %s", (nombre_genero,))
-            genero_id = cursor.fetchone()
-            if genero_id is None:
-                print(f"No se encontró el género: {nombre_genero}")
-                return
-            genero_id = genero_id[0]
-
-            # Verificar si se ha cargado una imagen
-            if hasattr(self, 'ruta_imagen'):
-                imagen = self.ruta_imagen  # Usar la ruta de la imagen cargada
+    def on_tab_selected_usuarios(self, event):
+        notebook = event.widget
+        selected_tab = notebook.index("current")
+        if notebook.tab(selected_tab, "text") == "Ver Usuarios":
+            # Verifica que self.ver_usuarios esté inicializado
+            if self.ver_usuarios is not None:
+                self.ver_usuarios.mostrar_usuarios()
             else:
-                imagen = "default_image.jpg"  # Si no hay imagen cargada, usar un valor por defecto
+                print("Error: self.ver_usuarios no está inicializado.")
 
-            # Realizar la inserción en la tabla app_libro
-            insert_query = """
-                INSERT INTO app_libro (nom_libro, precio, stock, imagen, id_autor_id, id_genero_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(insert_query, (nombre_libro, precio, stock, imagen, autor_id, genero_id))
 
-            # Confirmar los cambios
-            conexion.commit()
-
-            print("Producto agregado correctamente")
-
-            # Limpiar el formulario
-            self.limpiar_formulario_agregar_productos()
-
-        except Exception as e:
-            print(f"Error al agregar el producto: {e}")
-
-    def mostrar_formulario_mantenedor_arriendos(self):
-        # Minimizar el menú lateral
-        self.toggle_panel()
-
-        # Limpiar el cuerpo principal
+    def mostrar_formulario_arriendos(self):
+        # Limpiar el cuerpo principal antes de agregar nuevo contenido
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
@@ -639,127 +442,42 @@ class FormularioPrincipalDesign(tk.Tk):
         labelTitulo = tk.Label(frame_notebook, text="🏠 Mantenedor Arriendos", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
         labelTitulo.pack(anchor='nw', padx=0, pady=(0, 0))
 
-        # Crear el estilo para el notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('TNotebook', background=COLOR_MENU_LATERAL, borderwidth=0)
-        style.configure('TNotebook.Tab', background=COLOR_MENU_LATERAL, foreground='#fff', font=("Roboto", 10), padding=[10, 5])
-        style.map('TNotebook.Tab', background=[('selected', COLOR_MENU_LATERAL), ('!selected', '#555555')], foreground=[('selected', '#fff'), ('!selected', '#ccc')])
-        style.configure('TNotebook.Tab', borderwidth=0, relief='flat', padding=[10, 5], tabmargins=[0, 0, 0, 0])
-
-        # Crear el notebook (pestañas)
+        # Crear el notebook usando el estilo global TNotebook
         notebook = ttk.Notebook(frame_notebook, style='TNotebook')
         notebook.pack(fill='both', expand=True)
 
         # Crear las pestañas
         frame_ver_arriendos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
         frame_agregar_arriendos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_modificar_arriendos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_eliminar_arriendos = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
 
         notebook.add(frame_ver_arriendos, text="Ver Arriendos")
         notebook.add(frame_agregar_arriendos, text="Agregar Arriendos")
-        notebook.add(frame_modificar_arriendos, text="Modificar Arriendos")
-        notebook.add(frame_eliminar_arriendos, text="Eliminar Arriendos")
 
-        # Contenido de las pestañas (puedes personalizar esto según tus necesidades)
-        tk.Label(frame_ver_arriendos, text="Contenido de Ver Arriendos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_agregar_arriendos, text="Contenido de Agregar Arriendos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_modificar_arriendos, text="Contenido de Modificar Arriendos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_eliminar_arriendos, text="Contenido de Eliminar Arriendos", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
+        # Asignar el frame para ver arriendos
+        self.frame_ver_arriendos = frame_ver_arriendos
 
-        # Formulario para agregar arriendos
-        self.crear_formulario_agregar_arriendos(frame_agregar_arriendos)
+        # Crear una instancia de VerArriendos y pasarle el frame de "Ver Arriendos"
+        self.ver_arriendos = VerArriendos(self.frame_ver_arriendos)
 
-        # Vincular el evento de cambio de pestaña para actualizar los estilos
-        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        # Enlazar el evento con el método definido
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_selected_arriendos)
 
-    def crear_formulario_agregar_arriendos(self, frame):
-        # Crear el marco principal con el nuevo color
-        main_frame = tk.Frame(frame, bg="#1f2329")
-        main_frame.pack(padx=10, pady=10, fill='both', expand=True)
+        # **Integración del Formulario de Agregar Arriendos**
+        # Instanciar la clase AgregarArriendosForm y pasarle el frame correspondiente
+        AgregarArriendosForm(frame_agregar_arriendos, self.db_config)
+        self.update_idletasks()  # Asegura que el estilo se aplique correctamente
 
-        # Crear el formulario para agregar arriendos dentro del marco principal
-        form_frame = tk.Frame(main_frame, bg="#1f2329")
-        form_frame.pack(padx=10, pady=10, fill='both', expand=True)
-
-        style = ttk.Style()
-        style.configure("TLabel", font=('Segoe UI', 12), background="#1f2329", foreground="#c7d5e0")
-        style.configure("Custom.TButton", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="raised")
-        style.map("Custom.TButton", background=[("active", "#1b2838")])  # Quitar el brillo al pasar el mouse
-        style.configure("Custom.TCombobox", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
-        style.configure("Custom.TEntry", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
-
-        # Crear un frame para los campos en la misma fila
-        fields_frame = tk.Frame(form_frame, bg="#1f2329")
-        fields_frame.pack(pady=10)
-
-        # Etiquetas y entradas para Nombre del Libro, Precio y Stock
-        label_nombre = ttk.Label(fields_frame, text="Nombre del Libro:")
-        label_nombre.grid(row=0, column=0, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_nombre = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_nombre.grid(row=1, column=0, padx=10, pady=10, sticky='w')  # Margen a cada columna y fila
-
-        label_precio = ttk.Label(fields_frame, text="Precio:")
-        label_precio.grid(row=0, column=1, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_precio = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_precio.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-        label_stock = ttk.Label(fields_frame, text="Stock:")
-        label_stock.grid(row=0, column=2, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_stock = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_stock.grid(row=1, column=2, padx=10, pady=10, sticky='w')
-
-        # Etiquetas y entradas para Autor y Género
-        label_autor = ttk.Label(fields_frame, text="Autor:")
-        label_autor.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-        combo_autor = ttk.Combobox(fields_frame, values=["Autor 1", "Autor 2"], width=30, style="Custom.TCombobox")
-        combo_autor.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-
-        label_genero = ttk.Label(fields_frame, text="Género:")
-        label_genero.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-        combo_genero = ttk.Combobox(fields_frame, values=["Ciencia Ficción", "Thriller"], width=30, style="Custom.TCombobox")
-        combo_genero.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-        # Campo Imagen
-        label_imagen = ttk.Label(fields_frame, text="Imagen:")
-        label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_arriendos, style="Custom.TButton")
-        button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
-
-        # Botones Enviar y Limpiar
-        button_frame = tk.Frame(form_frame, bg="#1f2329")
-        button_frame.pack(pady=10)
-
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_arriendos, style="Custom.TButton")
-        button_enviar.pack(side=tk.LEFT, padx=5)
-
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_arriendos, style="Custom.TButton")
-        button_limpiar.pack(side=tk.LEFT, padx=5)
-
-    def cargar_imagen_agregar_arriendos(self):
-        # Función para cargar una imagen desde el computador
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
-        if file_path:
-            print(f"Imagen cargada: {file_path}")
-
-    def enviar_formulario_agregar_arriendos(self):
-        # Función para manejar el envío del formulario
-        print("Formulario enviado")
-
-    def limpiar_formulario_agregar_arriendos(self):
-        # Función para manejar la limpieza del formulario
-        print("Formulario limpiado")
+    def on_tab_selected_arriendos(self, event):
+        # Aquí puedes agregar la lógica para cuando se cambia de pestaña en el notebook de arriendos
+        selected_tab = event.widget.index("current")
+        print("Pestaña seleccionada en Mantenedor de Arriendos:", selected_tab)   
 
     def mostrar_formulario_usuarios(self):
-        # Minimizar el menú lateral
-        self.toggle_panel()
-
-        # Limpiar el cuerpo principal
+        # Limpiar el cuerpo principal antes de agregar nuevo contenido
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
-        # Crear un marco para agregar márgenes
+        # Crear un contenedor sin márgenes adicionales para el notebook
         frame_notebook = tk.Frame(self.cuerpo_principal, bg=COLOR_MENU_LATERAL)
         frame_notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
@@ -767,217 +485,494 @@ class FormularioPrincipalDesign(tk.Tk):
         labelTitulo = tk.Label(frame_notebook, text="👥 Mantenedor Usuarios", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
         labelTitulo.pack(anchor='nw', padx=0, pady=(0, 0))
 
-        # Crear el estilo para el notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('TNotebook', background=COLOR_MENU_LATERAL, borderwidth=0)
-        style.configure('TNotebook.Tab', background=COLOR_MENU_LATERAL, foreground='#fff', font=("Roboto", 10), padding=[10, 5])
-        style.map('TNotebook.Tab', background=[('selected', COLOR_MENU_LATERAL), ('!selected', '#555555')], foreground=[('selected', '#fff'), ('!selected', '#ccc')])
-        style.configure('TNotebook.Tab', borderwidth=0, relief='flat', padding=[10, 5], tabmargins=[0, 0, 0, 0])
-
-        # Crear el notebook (pestañas)
+        # Crear el notebook (pestañas) sin márgenes adicionales
         notebook = ttk.Notebook(frame_notebook, style='TNotebook')
-        notebook.pack(fill='both', expand=True)
+        notebook.pack(fill='both', expand=True, padx=0, pady=0)
 
         # Crear las pestañas
         frame_ver_usuarios = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
         frame_agregar_usuarios = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_modificar_usuarios = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_eliminar_usuarios = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
 
         notebook.add(frame_ver_usuarios, text="Ver Usuarios")
         notebook.add(frame_agregar_usuarios, text="Agregar Usuarios")
-        notebook.add(frame_modificar_usuarios, text="Modificar Usuarios")
-        notebook.add(frame_eliminar_usuarios, text="Eliminar Usuarios")
 
-        # Contenido de las pestañas (puedes personalizar esto según tus necesidades)
-        tk.Label(frame_ver_usuarios, text="Contenido de Ver Usuarios", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_agregar_usuarios, text="Contenido de Agregar Usuarios", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_modificar_usuarios, text="Contenido de Modificar Usuarios", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_eliminar_usuarios, text="Contenido de Eliminar Usuarios", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
+        # Asignar el frame para ver usuarios
+        self.frame_ver_usuarios = frame_ver_usuarios
 
-        # Formulario para agregar usuarios
-        self.crear_formulario_agregar_usuarios(frame_agregar_usuarios)
+        # Inicializa self.ver_usuarios solo si VerUsuarios está disponible y asegurarte de pasar db_config
+        if VerUsuarios:
+            self.ver_usuarios = VerUsuarios(self.frame_ver_usuarios, self.db_config)
 
-        # Vincular el evento de cambio de pestaña para actualizar los estilos
-        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        # Mostrar usuarios cuando se selecciona la pestaña "Ver Usuarios"
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_selected_usuarios)
 
-    def crear_formulario_agregar_usuarios(self, frame):
-        # Crear el marco principal con el nuevo color
-        main_frame = tk.Frame(frame, bg="#1f2329")
-        main_frame.pack(padx=10, pady=10, fill='both', expand=True)
+        # **Integración del Formulario de Agregar Usuarios**
+        # Instanciar la clase AgregarUsuariosForm sin usar pack
+        agregar_usuarios_form = AgregarUsuariosForm(frame_agregar_usuarios, self.db_config)
 
-        # Crear el formulario para agregar usuarios dentro del marco principal
-        form_frame = tk.Frame(main_frame, bg="#1f2329")
-        form_frame.pack(padx=10, pady=10, fill='both', expand=True)
 
-        style = ttk.Style()
-        style.configure("TLabel", font=('Segoe UI', 12), background="#1f2329", foreground="#c7d5e0")
-        style.configure("Custom.TButton", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="raised")
-        style.map("Custom.TButton", background=[("active", "#1b2838")])  # Quitar el brillo al pasar el mouse
-        style.configure("Custom.TCombobox", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
-        style.configure("Custom.TEntry", fieldbackground="#1b2838", background="#1b2838", foreground="#c7d5e0", bordercolor="#c7d5e0", lightcolor="#c7d5e0", darkcolor="#c7d5e0", borderwidth=2, relief="flat")
 
-        # Crear un frame para los campos en la misma fila
-        fields_frame = tk.Frame(form_frame, bg="#1f2329")
-        fields_frame.pack(pady=10)
 
-        # Etiquetas y entradas para Nombre, Email y Teléfono
-        label_nombre = ttk.Label(fields_frame, text="Nombre:")
-        label_nombre.grid(row=0, column=0, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_nombre = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_nombre.grid(row=1, column=0, padx=10, pady=10, sticky='w')  # Margen a cada columna y fila
 
-        label_email = ttk.Label(fields_frame, text="Email:")
-        label_email.grid(row=0, column=1, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_email = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_email.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
-        label_telefono = ttk.Label(fields_frame, text="Teléfono:")
-        label_telefono.grid(row=0, column=2, padx=10, pady=(40, 5), sticky='w')  # Margen considerable arriba (duplicado)
-        entry_telefono = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_telefono.grid(row=1, column=2, padx=10, pady=10, sticky='w')
 
-        # Etiquetas y entradas para Dirección y Rol
-        label_direccion = ttk.Label(fields_frame, text="Dirección:")
-        label_direccion.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-        entry_direccion = ttk.Entry(fields_frame, width=30, style="Custom.TEntry")
-        entry_direccion.grid(row=3, column=0, padx=10, pady=10, sticky='w')
 
-        label_rol = ttk.Label(fields_frame, text="Rol:")
-        label_rol.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-        combo_rol = ttk.Combobox(fields_frame, values=["Admin", "Usuario"], width=30, style="Custom.TCombobox")
-        combo_rol.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
-        # Campo Imagen
-        label_imagen = ttk.Label(fields_frame, text="Imagen:")
-        label_imagen.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-        button_imagen = ttk.Button(fields_frame, text="Cargar Imagen", command=self.cargar_imagen_agregar_usuarios, style="Custom.TButton")
-        button_imagen.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
-        # Botones Enviar y Limpiar
-        button_frame = tk.Frame(form_frame, bg="#1f2329")
-        button_frame.pack(pady=10)
 
-        button_enviar = ttk.Button(button_frame, text="Enviar", command=self.enviar_formulario_agregar_usuarios, style="Custom.TButton")
-        button_enviar.pack(side=tk.LEFT, padx=5)
 
-        button_limpiar = ttk.Button(button_frame, text="Limpiar", command=self.limpiar_formulario_agregar_usuarios, style="Custom.TButton")
-        button_limpiar.pack(side=tk.LEFT, padx=5)
 
-    def cargar_imagen_agregar_usuarios(self):
-        # Función para cargar una imagen desde el computador
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png")])
-        if file_path:
-            print(f"Imagen cargada: {file_path}")
 
-    def enviar_formulario_agregar_usuarios(self):
-        # Función para manejar el envío del formulario
-        print("Formulario enviado")
 
-    def limpiar_formulario_agregar_usuarios(self):
-        # Función para manejar la limpieza del formulario
-        print("Formulario limpiado")
 
-    def mostrar_formulario_arriendos(self):
-        # Minimizar el menú lateral
-        self.toggle_panel()
 
-        # Limpiar el cuerpo principal
+
+
+
+
+
+
+
+
+
+
+
+
+    def mostrar_seguimiento_arriendos(self):
+        # Limpiar el cuerpo principal antes de agregar nuevo contenido
         for widget in self.cuerpo_principal.winfo_children():
             widget.destroy()
 
+        # Utilizar el toggle_panel para ocultar el menú lateral si es necesario
+        if hasattr(self, 'menu_lateral') and self.menu_lateral.winfo_ismapped():
+            self.toggle_panel()
+
         # Crear un marco para agregar márgenes
-        frame_notebook = tk.Frame(self.cuerpo_principal, bg=COLOR_MENU_LATERAL)
-        frame_notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        frame_notebook = tk.Frame(self.cuerpo_principal, bg="#2a3138")
+        frame_notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Título del formulario
-        labelTitulo = tk.Label(frame_notebook, text="📅 Seguimiento Arriendos", font=("Roboto", 20), bg=COLOR_MENU_LATERAL, fg="white")
-        labelTitulo.pack(anchor='nw', padx=0, pady=(0, 0))
+        labelTitulo = tk.Label(frame_notebook, text="\ud83d\udcc5 Seguimiento de Arriendos", font=("Roboto", 20),
+                               bg="#2a3138", fg="white")
+        labelTitulo.pack(anchor='nw', padx=0, pady=(0, 20))
 
-        # Crear el estilo para el notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('TNotebook', background=COLOR_MENU_LATERAL, borderwidth=0)
-        style.configure('TNotebook.Tab', background=COLOR_MENU_LATERAL, foreground='#fff', font=("Roboto", 10), padding=[10, 5])
-        style.map('TNotebook.Tab', background=[('selected', COLOR_MENU_LATERAL), ('!selected', '#555555')], foreground=[('selected', '#fff'), ('!selected', '#ccc')])
-        style.configure('TNotebook.Tab', borderwidth=0, relief='flat', padding=[10, 5], tabmargins=[0, 0, 0, 0])
-
-        # Crear el notebook (pestañas)
+        # Crear el notebook usando el estilo global TNotebook
         notebook = ttk.Notebook(frame_notebook, style='TNotebook')
-        notebook.pack(fill='both', expand=True)
+        notebook.pack(fill="both", expand=True)
 
         # Crear las pestañas
-        frame_pendiente = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
-        frame_entregado = tk.Frame(notebook, bg=COLOR_MENU_LATERAL)
+        frame_arriendos_pendientes = tk.Frame(notebook, bg="#2a3138")
+        frame_arriendos_entregados = tk.Frame(notebook, bg="#2a3138")
 
-        notebook.add(frame_pendiente, text="Pendiente")
-        notebook.add(frame_entregado, text="Entregado")
+        notebook.add(frame_arriendos_pendientes, text="Arriendos Pendientes")
+        notebook.add(frame_arriendos_entregados, text="Arriendos Entregados")
 
-        # Contenido de las pestañas (puedes personalizar esto según tus necesidades)
-        tk.Label(frame_pendiente, text="Contenido de Pendiente", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
-        tk.Label(frame_entregado, text="Contenido de Entregado", bg=COLOR_MENU_LATERAL, fg="#fff").pack(pady=10)
+        # Llenar las pestañas con tablas
+        self.crear_tabla_seguimiento(frame_arriendos_pendientes, "Pendiente", "pendientes")
+        self.crear_tabla_seguimiento(frame_arriendos_entregados, "Entregado", "entregados")
 
-        # Vincular el evento de cambio de pestaña para actualizar los estilos
-        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        # Evento para manejar cambios de pestaña
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_selected_seguimiento_arriendos)
 
-    def on_tab_changed(self, event):
-        notebook = event.widget
-        selected_tab = notebook.select()
-        for tab_id in notebook.tabs():
-            if tab_id == selected_tab:
-                notebook.tab(tab_id, state='normal')
-            else:
-                notebook.tab(tab_id, state='normal')
+        self.cuerpo_principal.update_idletasks()  # Asegura que el estilo se aplique correctamente
 
-class Hexagon:
-    def __init__(self, canvas):
-        self.canvas = canvas
-        self.canvas_width = 1024  # Ancho del canvas
-        self.canvas_height = 600  # Alto del canvas
-        self.hexagon_coords = [
-            (self.canvas_width / 2 + 100 * math.cos(math.radians(angle)), self.canvas_height / 2 + 100 * math.sin(math.radians(angle)))
-            for angle in [30, 90, 150, 210, 270, 330]
-        ]
-        self.current_line = 0  # Línea actual que se está dibujando
-        self.total_lines = len(self.hexagon_coords)  # Total de líneas del hexágono
-        self.draw_lines()
+    def crear_tabla_seguimiento(self, frame, estado, tab_name):
+        # Crear el contenedor principal para la tabla
+        table_frame = tk.Frame(frame, bg="#2a3138")
+        table_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    def draw_lines(self):
-        if self.current_line < self.total_lines:
-            next_index = (self.current_line + 1) % self.total_lines
-            # Dibuja la línea actual
-            self.canvas.create_line(self.hexagon_coords[self.current_line], self.hexagon_coords[next_index], fill="#FFFFFF", width=5)
-            self.current_line += 1
-            # Llama a esta función nuevamente después de 1000 milisegundos
-            self.canvas.after(1000, self.draw_lines)
-        else:
-            # Una vez que se completa el hexágono, dibuja las otras líneas con un retraso
-            self.canvas.after(500, self.draw_cross_line)  # Espera 500ms antes de dibujar la línea cruzada
-            self.canvas.after(1000, self.draw_line_to_center)  # Espera 1000ms antes de dibujar la línea al centro
+        # Crear un contenedor para los filtros en la misma línea
+        top_frame = tk.Frame(table_frame, bg="#2a3138")
+        top_frame.pack(pady=10, anchor="w", fill="x")
 
-    def draw_cross_line(self):
-        # Dibuja una línea desde el vértice inferior izquierdo hasta el vértice superior izquierdo
-        lower_left_vertex = self.hexagon_coords[3]  # Vértice en 210 grados (inferior izquierdo)
-        upper_left_vertex = self.hexagon_coords[0]    # Vértice en 30 grados (superior izquierdo)
-        self.canvas.create_line(lower_left_vertex, upper_left_vertex, fill="#FFFFFF", width=5)  # Línea blanca más gruesa
+        # Crear un contenedor para los filtros
+        filters_frame = tk.Frame(top_frame, bg="#2a3138")
+        filters_frame.pack(side="left")
 
-    def draw_line_to_center(self):
-        # Calcular el centro del hexágono
-        center_x = self.canvas_width / 2  # Centro en X
-        center_y = self.canvas_height / 2  # Centro en Y
-        
-        # Vértice inferior derecho en 330 grados
-        lower_right_vertex = self.hexagon_coords[5]  # Vértice en 330 grados
-        
-        # Dibuja una línea desde el vértice inferior derecho hasta el centro del hexágono
-        self.canvas.create_line(lower_right_vertex, (center_x, center_y), fill="#FFFFFF", width=10)  # Línea blanca más gruesa
-        
-        # Muestra el mensaje de bienvenida
-        self.show_welcome_message()
+        # Obtener lista de meses y años disponibles en la base de datos
+        meses_lista, años_lista = self.obtener_meses_años_disponibles()
 
-    def show_welcome_message(self):
-        # Escribe el mensaje "Bienvenido" en el centro del lienzo
-        self.canvas.create_text(self.canvas_width / 2, self.canvas_height - 50, text="Book&Rent", fill="#FFFFFF", font=("Arial", 24))
-        # Destruir el canvas de animación después de mostrar el mensaje
-        self.canvas.after(2000, self.canvas.destroy)
+        # Combobox para seleccionar mes
+        meses_filter = ["Todos"] + meses_lista
+        mes_combobox = ttk.Combobox(filters_frame, values=meses_filter, state="readonly", font=("Roboto", 10),
+                                    style='Custom.TCombobox')  # Usa el estilo definido
+        mes_combobox.set("Todos")  # Establecer "Todos" como valor por defecto
+        mes_combobox.pack(side="left", padx=5)
+
+        # Combobox para seleccionar año
+        año_combobox = ttk.Combobox(filters_frame, values=["Todos"] + años_lista, state="readonly", font=("Roboto", 10),
+                                    style='Custom.TCombobox')  # Usa el estilo definido
+        año_combobox.set("Todos")  # Seleccionar "Todos" por defecto
+        año_combobox.pack(side="left", padx=5)
+
+        # Guardar referencias a los Comboboxes y árboles por pestaña
+        if tab_name == "pendientes":
+            self.mes_combobox_pendientes = mes_combobox
+            self.año_combobox_pendientes = año_combobox
+        elif tab_name == "entregados":
+            self.mes_combobox_entregados = mes_combobox
+            self.año_combobox_entregados = año_combobox
+
+        # Botón para aplicar filtros
+        aplicar_button = ttk.Button(filters_frame, text="Aplicar Filtros",
+                                   command=lambda: self.actualizar_tabla(tree, estado, mes_combobox.get(),
+                                                                     año_combobox.get()),
+                                   style="Custom.TButton")
+        aplicar_button.pack(side="left", padx=5)
+
+        # Definir las columnas de la tabla
+        columns = ("nombre", "rut", "telefono", "estado_libro", "nom_libro", "inicio_arriendo", "fin_arriendo",
+                   "dias_atraso", "valor_multa", "accion")
+
+        tree = ttk.Treeview(table_frame, columns=columns, show='headings', selectmode='browse')
+
+        # Definir encabezados de columnas
+        for col in columns:
+            tree.heading(col, text=col.replace("_", " ").title())
+
+        # Definir anchos de columnas
+        tree.column("nombre", width=150, anchor="center")
+        tree.column("rut", width=100, anchor="center")
+        tree.column("telefono", width=100, anchor="center")
+        tree.column("estado_libro", width=100, anchor="center")
+        tree.column("nom_libro", width=150, anchor="center")
+        tree.column("inicio_arriendo", width=100, anchor="center")
+        tree.column("fin_arriendo", width=100, anchor="center")
+        tree.column("dias_atraso", width=80, anchor="center")
+        tree.column("valor_multa", width=80, anchor="center")
+        tree.column("accion", width=150, anchor="center")
+
+        # Configurar estilos de la tabla
+        style_tree = ttk.Style()
+        style_tree.configure("Treeview",
+                             background="#1f2329",
+                             foreground="white",
+                             fieldbackground="#1f2329",
+                             rowheight=25,
+                             font=("Roboto", 10))
+        style_tree.map('Treeview', background=[('selected', '#2a3138')])
+
+        style_tree.configure("Treeview.Heading",
+                             background="#2a3138",
+                             foreground="white",
+                             font=("Roboto", 10, "bold"))
+
+        # Configurar colores alternos para filas
+        tree.tag_configure('oddrow', background="#1f2329")
+        tree.tag_configure('evenrow', background="#39424e")
+
+        # Agregar barra de desplazamiento
+        scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Configurar eventos de clic en la columna "Acción"
+        def on_tree_click(event):
+            region = tree.identify("region", event.x, event.y)
+            if region != "cell":
+                return
+            column = tree.identify_column(event.x)
+            if column == "#10":  # Columna "Acción" es la décima columna
+                row_id = tree.identify_row(event.y)
+                if not row_id:
+                    return  # No se seleccionó ninguna fila
+                valores = tree.item(row_id, 'values')
+                arriendo_id = row_id  # El iid es el ID del arriendo
+                if estado == "Pendiente":
+                    self.recibir_libro(arriendo_id)
+                else:
+                    self.marcar_pendiente(arriendo_id)
+
+        tree.bind("<Button-1>", on_tree_click)
+
+        tree.pack(fill="both", expand=True)
+
+        # Guardar referencias al árbol por pestaña
+        if tab_name == "pendientes":
+            self.tree_pendientes = tree
+        elif tab_name == "entregados":
+            self.tree_entregados = tree
+
+        # Cargar datos iniciales sin filtros
+        self.actualizar_tabla(tree, estado, mes_combobox.get(), año_combobox.get())
+
+    def obtener_meses_años_disponibles(self):
+        try:
+            # Conectar a la base de datos dbacapstone
+            conn = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="dbacapstone"
+            )
+            cursor = conn.cursor()
+
+            # Obtener lista de meses y años basados en fecha_inicio
+            cursor.execute("SELECT DISTINCT MONTH(fecha_inicio) FROM app_arriendo")
+            meses = [int(row[0]) for row in cursor.fetchall()]
+
+            cursor.execute("SELECT DISTINCT YEAR(fecha_inicio) FROM app_arriendo")
+            años = [str(row[0]) for row in cursor.fetchall()]
+
+            cursor.close()
+            conn.close()
+
+            # Mapeo de meses en español
+            meses_es = {
+                1: "Enero",
+                2: "Febrero",
+                3: "Marzo",
+                4: "Abril",
+                5: "Mayo",
+                6: "Junio",
+                7: "Julio",
+                8: "Agosto",
+                9: "Septiembre",
+                10: "Octubre",
+                11: "Noviembre",
+                12: "Diciembre"
+            }
+
+            # Eliminar duplicados y ordenar los meses
+            meses = sorted(set(meses))
+            meses_lista = [meses_es[mes] for mes in meses]
+
+            return meses_lista, años
+
+        except mysql.connector.Error as e:
+            print(f"Error al conectar a la base de datos: {e}")
+            return [], []
+
+    def actualizar_tabla(self, tree, estado, mes, anio):
+        # Limpiar la tabla
+        for item in tree.get_children():
+            tree.delete(item)
+
+        # Obtener datos filtrados
+        datos = self.obtener_datos_seguimiento(estado, mes, anio)
+
+        # Insertar datos en la tabla
+        for index, fila in enumerate(datos):
+            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+            arriendo_id = fila[-1]
+            tree.insert("", tk.END, iid=arriendo_id, values=fila[:-1], tags=(tag,))
+
+    def obtener_datos_seguimiento(self, estado, mes, anio):
+        # Mapear el estado a 0 o 1
+        estado_num = 0 if estado == "Pendiente" else 1
+
+        try:
+            # Conectar a la base de datos dbacapstone
+            conn = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="dbacapstone"
+            )
+            cursor = conn.cursor()
+
+            # Construir la consulta SQL con filtros
+            query = """
+            SELECT
+                CONCAT(app_customuser.first_name, ' ', app_customuser.last_name) AS nombre,
+                app_customuser.rut,
+                app_customuser.telefono,
+                app_arriendo.libro_entregado AS estado_libro,
+                app_libroarr.nom_libro AS nom_libro,
+                app_arriendo.fecha_inicio AS inicio_arriendo,
+                app_arriendo.fecha_fin AS fin_arriendo,
+                app_arriendo.id AS arriendo_id
+            FROM
+                app_arriendo
+            JOIN app_customuser ON app_arriendo.cliente_id = app_customuser.id
+            JOIN app_libroarr ON app_arriendo.id_producto = app_libroarr.id
+            WHERE
+                app_arriendo.libro_entregado = %s
+            """
+
+            # Lista de parámetros para la consulta
+            params = [estado_num]
+
+            # Agregar filtros de mes y año basados en fecha_inicio
+            if mes != "Todos":
+                # Mapeo de meses en español a números
+                meses_es = {
+                    "Enero": 1,
+                    "Febrero": 2,
+                    "Marzo": 3,
+                    "Abril": 4,
+                    "Mayo": 5,
+                    "Junio": 6,
+                    "Julio": 7,
+                    "Agosto": 8,
+                    "Septiembre": 9,
+                    "Octubre": 10,
+                    "Noviembre": 11,
+                    "Diciembre": 12
+                }
+                mes_num = meses_es.get(mes)
+                if mes_num:
+                    query += " AND MONTH(app_arriendo.fecha_inicio) = %s"
+                    params.append(mes_num)
+
+            if anio != "Todos":
+                query += " AND YEAR(app_arriendo.fecha_inicio) = %s"
+                params.append(anio)
+
+            cursor.execute(query, params)
+            result = cursor.fetchall()
+
+            data = []
+            for row in result:
+                nombre = row[0]
+                rut = row[1]
+                telefono = row[2]
+                estado_libro_db = row[3]
+                nom_libro = row[4]
+                inicio_arriendo = row[5]
+                fin_arriendo = row[6]
+                arriendo_id = row[7]
+
+                # Formatear fechas en formato día-mes-año
+                inicio_arriendo_str = inicio_arriendo.strftime("%d-%m-%Y")
+                fin_arriendo_str = fin_arriendo.strftime("%d-%m-%Y")
+
+                # Calcular días de atraso y valor multa
+                # Verificar si fin_arriendo es datetime o date
+                if isinstance(fin_arriendo, datetime):
+                    fin_arriendo_date = fin_arriendo.date()
+                elif isinstance(fin_arriendo, date):
+                    fin_arriendo_date = fin_arriendo
+                else:
+                    # Manejar otros tipos o establecer a hoy si es None
+                    fin_arriendo_date = date.today()
+
+                today = date.today()
+                dias_atraso = (today - fin_arriendo_date).days
+                if dias_atraso < 0:
+                    dias_atraso = 0
+                # Supongamos que el valor de la multa es 1000 por día de atraso
+                valor_multa = dias_atraso * 1000
+
+                # Actualizar estado visualmente
+                if estado_libro_db == 0:
+                    if dias_atraso > 0:
+                        estado_libro = "Atrasado"
+                    else:
+                        estado_libro = "Pendiente"
+                else:
+                    estado_libro = "Entregado"
+
+                # Determinar acción
+                if estado == "Pendiente":
+                    accion = "Recibir Libro"
+                else:
+                    accion = "Marcar como Pendiente"
+
+                # Agregar datos a la lista
+                data.append((
+                    nombre,
+                    rut,
+                    telefono,
+                    estado_libro,
+                    nom_libro,
+                    inicio_arriendo_str,
+                    fin_arriendo_str,
+                    str(dias_atraso),
+                    f"${valor_multa}",
+                    accion,
+                    arriendo_id  # Agregar ID para identificar el registro
+                ))
+
+            cursor.close()
+            conn.close()
+
+            return data
+
+        except mysql.connector.Error as e:
+            print(f"Error al conectar a la base de datos: {e}")
+            return []
+
+    def recibir_libro(self, arriendo_id):
+        # Confirmar la acción con el usuario
+        respuesta = messagebox.askyesno("Confirmación", "¿Desea marcar este libro como recibido?")
+        if respuesta:
+            try:
+                # Conectar a la base de datos dbacapstone
+                conn = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="",
+                    database="dbacapstone"
+                )
+                cursor = conn.cursor()
+
+                # Actualizar el estado a '1' (Entregado) para el arriendo seleccionado
+                cursor.execute("""
+                    UPDATE app_arriendo SET libro_entregado = 1 WHERE id = %s
+                """, (arriendo_id,))
+
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                messagebox.showinfo("Éxito", "El libro ha sido marcado como recibido.")
+
+                # Actualizar las tablas después de cambiar el estado
+                self.actualizar_tabla_pendientes()
+                self.actualizar_tabla_entregados()
+
+            except mysql.connector.Error as e:
+                messagebox.showerror("Error", f"No se pudo actualizar el estado: {e}")
+
+    def marcar_pendiente(self, arriendo_id):
+        # Confirmar la acción con el usuario
+        respuesta = messagebox.askyesno("Confirmación", "¿Desea marcar este libro como pendiente nuevamente?")
+        if respuesta:
+            try:
+                # Conectar a la base de datos dbacapstone
+                conn = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="",
+                    database="dbacapstone"
+                )
+                cursor = conn.cursor()
+
+                # Actualizar el estado a '0' (Pendiente) para el arriendo seleccionado
+                cursor.execute("""
+                    UPDATE app_arriendo SET libro_entregado = 0 WHERE id = %s
+                """, (arriendo_id,))
+
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                messagebox.showinfo("Éxito", "El libro ha sido marcado como pendiente nuevamente.")
+
+                # Actualizar las tablas después de cambiar el estado
+                self.actualizar_tabla_pendientes()
+                self.actualizar_tabla_entregados()
+
+            except mysql.connector.Error as e:
+                messagebox.showerror("Error", f"No se pudo actualizar el estado: {e}")
+
+    def actualizar_tabla_pendientes(self):
+        # Obtener el estado actual de los filtros
+        mes = self.mes_combobox_pendientes.get()
+        anio = self.año_combobox_pendientes.get()
+
+        # Actualizar la tabla de pendientes
+        self.actualizar_tabla(self.tree_pendientes, "Pendiente", mes, anio)
+
+    def actualizar_tabla_entregados(self):
+        # Obtener el estado actual de los filtros
+        mes = self.mes_combobox_entregados.get()
+        anio = self.año_combobox_entregados.get()
+
+        # Actualizar la tabla de entregados
+        self.actualizar_tabla(self.tree_entregados, "Entregado", mes, anio)
+
+    def on_tab_selected_seguimiento_arriendos(self, event):
+        selected_tab = event.widget.index("current")
+        print(f"Pestaña seleccionada en Seguimiento de Arriendos: {selected_tab}")
