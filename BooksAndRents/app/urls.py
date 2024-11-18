@@ -41,5 +41,8 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('payment/', views.payment_page, name='payment_page'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('procesar-pago/', views.procesar_pago, name='procesar_pago'),
+    path("confirmacion-pago/", views.confirmacion_pago, name="confirmacion_pago"),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

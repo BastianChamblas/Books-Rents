@@ -1,197 +1,225 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block title %}Libros - Books&Rents{% endblock %}
 
 {% block content %}
-
-    <!-- ***** About Us Page ***** -->
-    <div class="page-heading-rent-venue">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <h2>Te interesa suscribirte?</h2>
-                    <span>Revisa todos los beneficios que tendrás con cada una de nuestras suscripciones!</span>
-                </div>
-            </div>
-        </div>
+<script src="{% static 'assets/js/custom.js' %}"></script>
+<!-- ***** About Us Page ***** -->
+<div class="page-heading-rent-venue">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <h2>Te interesa suscribirte?</h2>
+        <span>Revisa todos los beneficios que tendrás con cada una de nuestras suscripciones!</span>
+      </div>
     </div>
+  </div>
+</div>
 
-    <div class="rent-venue-tabs">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="row" id="tabs">
-                        <div class="col-lg-12">
-                            <div class="heading-tabs">
-                                <div class="row">
-                                    <div class="col-lg-8">
-                                        <ul>
-                                          <li><a href='#tabs-1'>Básica</a></li>
-                                          <li><a href='#tabs-2'>Completa</a></a></li>
-                                          <li><a href='#tabs-3'>Ultra</a></a></li>
-                                        </ul>
-                                    </div>
-                                    <div class="col-lg-4">
-                                          <div class="main-dark-button">
-                                              <a href="ticket-details.html">Suscribirse</a>
-                                          </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <section class='tabs-content'>
-                                <article id='tabs-1'>
-                                    <div class="row">
-                                        <div class="col-lg-9">
-                                            <div class="right-content">
-                                                <h4>Básica</h4>
-                                                <p> Accede a nuestra biblioteca con cientos de títulos y disfruta del arrendamiento de libros físicos o digitales. Perfecta para quienes buscan una experiencia sencilla y accesible. <ul class="list">
-                                                    <li>Básica</li>
-                                                    <li>$4.500 al mes</li>
-                                                    <li>860 suscritos</li>
-                                                </ul>
-                                                <div class="main-dark-button">
-                                                    <a href="{% url 'crear_suscripcion' 1 %}">Suscribirse</a> <!-- Tipo Básica -->
-                                                </div>
-                                            </div>
-                                       
-                                        </div>
-                                    </div>
-                                </article>                            
-                                <article id='tabs-2'>
-                                    <div class="row">
-                                        <div class="col-lg-9">
-                                            <div class="right-content">
-                                                <h4>Completa</h4>
-                                                <p> Todo lo que incluye la suscripción básica, pero con acceso prioritario a lanzamientos recientes y mayor flexibilidad en el número de libros que puedes arrendar simultáneamente. Ideal para los lectores ávidos que quieren estar siempre al día.
-                                                    <ul class="list">
-                                                    <li>Completa</li>
-                                                    <li>$5.500 al mes</li>
-                                                    <li>300 Suscritos</li>
-                                                </ul>
-                                                <div class="main-dark-button">
-                                                    <a href="{% url 'crear_suscripcion' 2 %}">Suscribirse</a> <!-- Tipo Completa -->
-                                                </div>
-                                            </div>
-                                        </div>
-                                       
-                                    </div>
-                                </article>   
-                                <article id='tabs-3'>
-                                    <div class="row">
-                                        <div class="col-lg-9">
-                                            <div class="right-content">
-                                                <h4>Ultra</h4>
-                                                <p> La experiencia definitiva para los amantes de la lectura. Además de los beneficios de la suscripción completa, disfrutarás de acceso ilimitado a todos los títulos de nuestra biblioteca, libros exclusivos, entregas rápidas sin costo adicional y acceso anticipado a novedades literarias y eventos especiales. ¡La mejor opción para quienes buscan lo mejor de lo mejor!
-                                                     <ul class="list">
-                                                    <li>Ultra</li>
-                                                    <li>$6.500 al mes</li>
-                                                    <li>250 Suscritos</li>
-                                                </ul>
-                                                <div class="main-dark-button">
-                                                    <a href="{% url 'crear_suscripcion' 3 %}">Suscribirse</a> <!-- Tipo Ultra -->
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        </div>
-                                    </div>
-                                </article>    
-                            </section>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="rent-venue-application">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-9">
-                    <div class="heading-text">
-                        <h4>Quieres más información?</h4>
-                    </div>
-                    <div class="contact-form">
-                        <form id="contact" action="" method="post">
-                          <div class="row">
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="name" type="text" id="name" placeholder="Ingresa tu nombre*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="email" type="text" id="email" pattern="[^ @]*@[^ @]*" placeholder="Ingresa tu correo*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="phone-number" type="text" id="phone-number" placeholder="Teléfono*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="company-organization" type="text" id="company-organization" placeholder="Compañía / Organización / Colegio*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="venue-requested" type="text" id="venue-requested" placeholder="Motivo*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                              <fieldset>
-                                <input name="type-event" type="text" id="type-event" placeholder="Tipo de cuenta*" required="">
-                              </fieldset>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                         
-                            </div>
-                            <div class="col-lg-12">
-                              <fieldset>
-                                <textarea name="about-event-hosting" rows="6" id="about-event-hosting" placeholder="Cuéntanos" required=""></textarea>
-                              </fieldset>
-                            </div>
-                            <div class="col-lg-12">
-                              <fieldset>
-                                <button type="submit" id="form-submit" class="main-dark-button">Enviar</button>
-                              </fieldset>
-                            </div>
-                          </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-  <!-- *** Subscribe *** -->
-    <div class="subscribe">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4">
-                    <h4>Recibe novedades!</h4>
-                </div>
+<div class="rent-venue-tabs">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="row" id="tabs">
+          <div class="col-lg-12">
+            <div class="heading-tabs">
+              <div class="row">
                 <div class="col-lg-8">
-                    <form id="subscribe" action="" method="get">
-                        <div class="row">
-                          <div class="col-lg-9">
-                            <fieldset>
-                              <input name="email" type="text" id="email" pattern="[^ @]*@[^ @]*" placeholder="Ingresa tu correo" required="">
-                            </fieldset>
-                          </div>
-                          <div class="col-lg-3">
-                            <fieldset>
-                              <button type="submit" id="form-submit" class="main-dark-button">Enviar</button>
-                            </fieldset>
-                          </div>
-                        </div>
-                    </form>
+                  <ul>
+                    <li><a href='#tabs-1'>Básica</a></li>
+                    <li><a href='#tabs-2'>Completa</a></li>
+                    <li><a href='#tabs-3'>Ultra</a></li>
+                  </ul>
                 </div>
+              </div>
             </div>
+          </div>
+          <div class="col-lg-12">
+            <section class='tabs-content'>
+              <article id='tabs-1'>
+                <div class="row">
+                  <div class="col-lg-9">
+                    <div class="right-content">
+                      <h4>Básica</h4>
+                      <p>Accede a nuestra biblioteca con cientos de títulos y disfruta del arrendamiento de libros
+                        físicos o digitales. Perfecta para quienes buscan una experiencia sencilla y accesible.</p>
+                      <ul class="list">
+                        <li>Básica</li>
+                        <li>$4.500 al mes</li>
+                        <li>860 suscritos</li>
+                      </ul>
+                      <div class="main-dark-button">
+                        <a href="#" onclick="abrirModal('Básica')">Suscribirse</a><!-- Tipo Básica -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+              <article id='tabs-2'>
+                <div class="row">
+                  <div class="col-lg-9">
+                    <div class="right-content">
+                      <h4>Completa</h4>
+                      <p>Todo lo que incluye la suscripción básica, pero con acceso prioritario a lanzamientos
+                        recientes y mayor flexibilidad en el número de libros que puedes arrendar simultáneamente. Ideal
+                        para los lectores ávidos que quieren estar siempre al día.</p>
+                      <ul class="list">
+                        <li>Completa</li>
+                        <li>$5.500 al mes</li>
+                        <li>300 Suscritos</li>
+                      </ul>
+                      <div class="main-dark-button">
+                        <a href="#" onclick="abrirModal('Completa')">Suscribirse</a> <!-- Tipo Completa -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+              <article id='tabs-3'>
+                <div class="row">
+                  <div class="col-lg-9">
+                    <div class="right-content">
+                      <h4>Ultra</h4>
+                      <p>La experiencia definitiva para los amantes de la lectura. Además de los beneficios de la
+                        suscripción completa, disfrutarás de acceso ilimitado a todos los títulos de nuestra biblioteca,
+                        libros exclusivos, entregas rápidas sin costo adicional y acceso anticipado a novedades
+                        literarias y eventos especiales. ¡La mejor opción para quienes buscan lo mejor de lo mejor!</p>
+                      <ul class="list">
+                        <li>Ultra</li>
+                        <li>$6.500 al mes</li>
+                        <li>250 Suscritos</li>
+                      </ul>
+                      <div class="main-dark-button">
+                        <a href="#" onclick="abrirModal('Ultra')">Suscribirse</a> <!-- Tipo Ultra -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </section>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
+</div>
+
+
+
+</script>
+
+<!-- Modal de Pago -->
+<div id="modalPago" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="cerrarModal()">&times;</span>
+    <h2>Completa tu Pago</h2>
+    <p>Estás a punto de suscribirte al plan: <strong id="tipoSuscripcion"></strong></p>
+    <form id="formPago" onsubmit="procesarPago(event)">
+      <label for="nombre">Nombre Completo:</label>
+      <input type="text" id="nombre" name="nombre" required>
+
+      <label for="email">Correo Electrónico:</label>
+      <input type="email" id="email" name="email" required>
+
+      <label for="tarjeta">Número de Tarjeta (Simulado):</label>
+      <input type="text" id="tarjeta" name="tarjeta" maxlength="16" required>
+
+      <input type="hidden" id="tipo" name="tipo">
+      
+      <button type="submit">Pagar</button>
+    </form>
+  </div>
+</div>
+<!-- Suscripciones -->
+<script>
+  function abrirModal(tipo) {
+    document.getElementById("modalPago").style.display = "block";
+    document.getElementById("tipoSuscripcion").textContent = tipo;
+    document.getElementById("tipo").value = tipo;
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalPago").style.display = "none";
+  }
+
+  function procesarPago(event) {
+    event.preventDefault();
+
+    const email = document.getElementById("email").value;
+    const tipo = document.getElementById("tipo").value;
+
+    fetch('/procesar-pago/', {
+        method: 'POST',
+        body: JSON.stringify({ email, tipo }), // Enviar en formato JSON
+        headers: {
+            'Content-Type': 'application/json' // Asegurar que se especifique JSON
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+        } else {
+            alert('Error: ' + (data.error || data.message));
+        }
+    })
+    .catch(error => console.error('Error en la petición:', error));
+}
+</script>
+
+
+
+<!-- Estilos para la Ventana Modal -->
+<style>
+  .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4); 
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width: 30%; 
+    border-radius: 10px;
+  }
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+  form label, input {
+    margin-bottom: 10px;
+  }
+  form button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  form button:hover {
+    background-color: #45a049;
+  }
+</style>
 {% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Registro - Books&Rents{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">  
+            <div class="card shadow-lg">
+                <div class="card-header text-center bg-gradient"> 
+                    <h3>Crear cuenta</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form action="" method="POST">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-block">Registrarse</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p>¿Ya tienes cuenta? <a href="{% url 'login' %}" class="text-primary">Iniciar sesión</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+    {% for msj in messages %}
+        {% if 'bien' in msj.tags %}
+            <script>
+                Swal.fire({
+                    title: 'Registro exitoso!',
+                    text: '{{ msj }}',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            </script>
+        {% elif 'mal' in msj.tags %}
+            <script>
+                Swal.fire({
+                    title: 'Error en el registro',
+                    text: '{{ msj }}',
+                    icon: 'error',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            </script>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% endblock %}
+
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #4e7bab, #3672b3);
+        color: white;
+    }
+
+    .btn-primary {
+        background-color: #4e7bab;
+        border-color: #3672b3;
+        transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .btn-primary:hover {
+        background-color: #355c86;
+        transform: translateY(-2px);
+    }
+
+    .card {
+        border-radius: 10px;
+        box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+        opacity: 0.9;
+    }
+</style>

@@ -3,7 +3,13 @@ from django.http import JsonResponse
 from django.contrib.auth.models import *
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
+from django.utils.timezone import now
+from datetime import datetime, timedelta
+import os
+import requests
+import re
+from django.conf import settings
+
 # Create your models here.
 
 
@@ -73,6 +79,20 @@ class Autor(models.Model):
 
     def __str__(self):
         return self.nombre_autor
+  # Asegúrate de tener la función ajustada
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Libro(models.Model):
     nom_libro = models.CharField(max_length=255)
@@ -80,26 +100,116 @@ class Libro(models.Model):
     stock = models.IntegerField()
     id_genero = models.ForeignKey('GeneroLib', on_delete=models.CASCADE, null=True, blank=True)
     id_autor = models.ForeignKey('Autor', on_delete=models.CASCADE, null=True, blank=True)
-    imagen = models.ImageField(upload_to='libros/', null=True)
+    imagen = models.CharField(max_length=500, null=True, blank=True)  # Puede almacenar la URL completa o el file_id
 
     def __str__(self):
         return self.nom_libro
 
     def restar_stock(self, cantidad):
-        """Resta una cantidad específica del stock."""
         if self.stock >= cantidad:
             self.stock -= cantidad
             self.save()
+        else:
+            raise ValueError("No hay suficiente stock disponible")
+
+    @property
+    def imagen_local_path(self):
+        """Devuelve la ruta local de la imagen."""
+        if self.imagen:
+            return os.path.join(settings.MEDIA_ROOT, 'libros', f"{self.id}_imagen.jpg")
+        return None
+
+    @property
+    def imagen_url(self):
+        """Descarga la imagen si no existe localmente y devuelve la URL local."""
+        local_path = self.imagen_local_path
+        if local_path and not os.path.exists(local_path):
+            self.descargar_imagen()
+        return f"/media/libros/{self.id}_imagen.jpg" if self.imagen else ""
     
+    def descargar_imagen(self):
+        """Descarga la imagen desde Google Drive y la guarda localmente."""
+        if self.imagen:
+            # Extraer el file_id usando una expresión regular
+            match = re.search(r'/d/([a-zA-Z0-9_-]+)', self.imagen)
+            if match:
+                file_id = match.group(1)
+                url = f"https://drive.google.com/uc?export=view&id={file_id}&confirm=t"
+                print(f"Descargando imagen desde {url}")
+                try:
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()  # Esto generará una excepción para errores HTTP
+                    os.makedirs(os.path.dirname(self.imagen_local_path), exist_ok=True)
+                    with open(self.imagen_local_path, "wb") as file:
+                        for chunk in response.iter_content(1024):
+                            file.write(chunk)
+                    print(f"Imagen descargada y almacenada en {self.imagen_local_path}")
+                except requests.exceptions.RequestException as e:
+                    print(f"Error al descargar la imagen desde {url}: {e}")
+            else:
+                print("URL de imagen no válida.")
+
+
+
+
 class LibroArr(models.Model):
     nom_libro = models.CharField(max_length=255)
     stock = models.IntegerField()
     id_genero = models.ForeignKey(GeneroLib, on_delete=models.CASCADE, null=True, blank=True)
     id_autor = models.ForeignKey(Autor, on_delete=models.CASCADE, null=True, blank=True)
-    imagen = models.ImageField(upload_to='libros/', null=True)
+    imagen = models.CharField(max_length=100, null=True, blank=True)  # Puede almacenar la URL completa o el file_id
 
     def __str__(self):
         return self.nom_libro
+
+    @property
+    def imagen_local_path(self):
+        """Devuelve la ruta local de la imagen."""
+        if self.imagen:
+            return os.path.join(settings.MEDIA_ROOT, 'libros', f"{self.id}_imagen.jpg")
+        return None
+
+    @property
+    def imagen_url(self):
+        """Descarga la imagen si no existe localmente y devuelve la URL local."""
+        local_path = self.imagen_local_path
+        if local_path and not os.path.exists(local_path):
+            self.descargar_imagen()
+        return f"/media/libros/{self.id}_imagen.jpg" if self.imagen else ""
+    
+    def descargar_imagen(self):
+        """Descarga la imagen desde Google Drive y la guarda localmente."""
+        if self.imagen:
+            # Extraer el file_id usando una expresión regular
+            match = re.search(r'/d/([a-zA-Z0-9_-]+)', self.imagen)
+            if match:
+                file_id = match.group(1)
+                url = f"https://drive.google.com/uc?export=view&id={file_id}&confirm=t"
+                print(f"Descargando imagen desde {url}")
+                try:
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()  # Esto generará una excepción para errores HTTP
+                    os.makedirs(os.path.dirname(self.imagen_local_path), exist_ok=True)
+                    with open(self.imagen_local_path, "wb") as file:
+                        for chunk in response.iter_content(1024):
+                            file.write(chunk)
+                    print(f"Imagen descargada y almacenada en {self.imagen_local_path}")
+                except requests.exceptions.RequestException as e:
+                    print(f"Error al descargar la imagen desde {url}: {e}")
+            else:
+                print("URL de imagen no válida.")
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Carrito(models.Model):
     cliente = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -150,37 +260,32 @@ class TipoSubcripscion(models.Model):
 class Sub(models.Model):
     id_us = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     id_ts = models.ForeignKey(TipoSubcripscion, on_delete=models.CASCADE, blank=True, null=True)
-    fecha_inicio = models.DateField(default=timezone.now)  # Fecha de inicio de la suscripción
+    fecha_inicio = models.DateField(default=timezone.now)
+    invalida = models.BooleanField(default=False)
 
     @property
     def fecha_fin(self):
-        # Calcula la fecha de fin sumando 30 días a la fecha de inicio
         return self.fecha_inicio + timedelta(days=30)
 
     @property
     def activa(self):
-        # Retorna True si la suscripción aún es válida
-        return timezone.now().date() <= self.fecha_fin
-
+        return timezone.now().date() <= self.fecha_fin and not self.invalida
 
 class Arriendo(models.Model):
     cliente = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    fecha_inicio = models.DateField(default=timezone.now)
-    fecha_fin = models.DateField()
+    fecha_inicio = models.DateField(default=now)
+    fecha_fin = models.DateField(null=True, blank=True)
+    arriendo_atraso = models.BooleanField(default=False)
+    producto= models.ForeignKey(LibroArr, on_delete=models.CASCADE)
+    libro_entregado = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
+        # Calcula la fecha de fin si no ha sido especificada
         if not self.fecha_fin:
             self.fecha_fin = self.fecha_inicio + timedelta(days=30)
+            
         super(Arriendo, self).save(*args, **kwargs)
-
-class ItemArriendo(models.Model):
-    arriendo = models.ForeignKey(Arriendo, on_delete=models.CASCADE)
-    libro = models.ForeignKey(LibroArr, on_delete=models.CASCADE)
-    cantidad = models.IntegerField()
-
-    def __str__(self):
-        return f'{self.cantidad} x {self.libro.nom_libro}'
-
+    
 class Compra(models.Model):
     cliente = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     producto = models.ForeignKey(Libro, on_delete=models.CASCADE)

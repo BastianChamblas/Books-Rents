@@ -4,330 +4,306 @@
 
 {% block content %}
 
-
-    <!-- ***** Main Banner Area Start ***** -->
-    <div class="main-banner">
-        <div class="counter-content">
-            <ul>
-                <li></li>
-                <h1>Libros a un clic de distancia, historias sin límite.</h1>
-            </ul>
-            <ul>
-                <div class="container">
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="main-content">
-                    
-                                </div>
-                                <h6></h6>
-                                <h2>Perfil</h2>
-            </ul>
-            
-        </div>
-      
-
-
-<style type="text/css">
-    /*=====================================
-    reset estilos
-    =====================================*/
-    
-    html {
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-        line-height: 1.4;
-    }
-    
-    
-    * {
-        margin: 0;
-        padding: 0;
-        -webkit-box-sizing: border-box;
-        -moz-box-sizing: border-box;
-        box-sizing: border-box;
-    }
-    
-    body {
-        color: #404040;
-        font-family: "Arial", Segoe UI, Tahoma, sans-serifl, Helvetica Neue, Helvetica;
-    }
-    
-    /*=====================================
-    estilos de la utilidad
-    =====================================*/
-    .seccion-perfil-usuario .perfil-usuario-body,
-    .seccion-perfil-usuario {
-        display: flex;
-        flex-wrap: wrap;
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-header {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        background: linear-gradient(#a74343, transparent);
-        margin-bottom: 1.25rem;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-portada {
-        display: block;
-        position: relative;
-        width: 75%;
-        height: 17rem;
-        background-image: linear-gradient(45deg, #e05c88, #ad5522);
-        border-radius: 0 0 20px 20px;
-      
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-portada .boton-portada {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        border: 0;
-        border-radius: 8px;
-        padding: 12px 25px;
-        background-color: rgba(0, 0, 0, .5);
-        color: #fff;
-        cursor: pointer;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-portada .boton-portada i {
-        margin-right: 1rem;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-avatar {
-        display: flex;
-        width: 180px;
-        height: 180px;
-        align-items: center;
-        justify-content: center;
-        border: 7px solid #FFFFFF;
-        background-color: #DFE5F2;
-        border-radius: 50%;
-        box-shadow: 0 0 12px rgba(0, 0, 0, .2);
-        position: absolute;
-        bottom: -40px;
-        left: calc(50% - 90px);
-        z-index: 1;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-avatar img {
-        width: 100%;
-        position: relative;
-        border-radius: 50%;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-avatar .boton-avatar {
-        position: absolute;
-        left: -2px;
-        top: -2px;
-        border: 0;
-        background-color: #fff;
-        box-shadow: 0 0 12px rgba(0, 0, 0, .2);
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-body {
-        width: 70%;
-        position: relative;
-        max-width: 750px;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-body .titulo {
-        display: block;
-        width: 100%;
-        font-size: 1.75em;
-        margin-bottom: 0.5rem;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-body .texto {
-        color: #848484;
-        font-size: 0.95em;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-footer,
-    .seccion-perfil-usuario .perfil-usuario-bio {
-        display: flex;
-        flex-wrap: wrap;
-        padding: 1.5rem 2rem;
-        box-shadow: 0 0 12px rgba(0, 0, 0, .2);
-        background-color: #fff;
-        border-radius: 15px;
-        width: 100%;
-    }
-    
-    .seccion-perfil-usuario .perfil-usuario-bio {
-        margin-bottom: 1.25rem;
-        text-align: center;
-    }
-    
-    .seccion-perfil-usuario .lista-datos {
-        width: 50%;
-        list-style: none;
-    }
-    
-    .seccion-perfil-usuario .lista-datos li {
-        padding: 5px 0;
-    }
-    
-    .seccion-perfil-usuario .lista-datos li>.icono {
-        margin-right: 1rem;
-        font-size: 1.2rem;
-        vertical-align: middle;
-    }
-    
-    .seccion-perfil-usuario .redes-sociales {
-        position: absolute;
-        right: calc(0px - 50px - 1rem);
-        top: 0;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .seccion-perfil-usuario .redes-sociales .boton-redes {
-        border: 0;
-        background-color: #fff;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        color: #fff;
-        box-shadow: 0 0 12px rgba(0, 0, 0, .2);
-        font-size: 1.3rem;
-    }
-    
-    .seccion-perfil-usuario .redes-sociales .boton-redes+.boton-redes {
-        margin-top: .5rem;
-    }
-    
-    .seccion-perfil-usuario .boton-redes.facebook {
-        background-color: #5955FF;
-    }
-    
-    .seccion-perfil-usuario .boton-redes.twitter {
-        background-color: #35E1BF;
-    }
-    
-    .seccion-perfil-usuario .boton-redes.instagram {
-        background: linear-gradient(45deg, #FF2DFD, #40A7FF);
-    }
-    
-    /* adactacion a dispositivos */
-    @media (max-width: 750px) {
-        .seccion-perfil-usuario .lista-datos {
-            width: 100%;
+    <style type="text/css">
+        /*=====================================
+        reset estilos
+        =====================================*/
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            line-height: 1.4;
         }
-    
-        .seccion-perfil-usuario .perfil-usuario-portada,
-        .seccion-perfil-usuario .perfil-usuario-body {
-            width: 95%;
+
+        * {
+            margin: 0;
+            padding: 0;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
         }
-    
-        .seccion-perfil-usuario .redes-sociales {
-            position: relative;
-            flex-direction: row;
+
+        body {
+            color: #404040;
+            font-family: "Arial", Segoe UI, Tahoma, sans-serif, Helvetica Neue, Helvetica;
+            background-color: #f9f9f9;
+        }
+
+        /* Perfil de usuario */
+        .seccion-perfil-usuario {
             width: 100%;
-            left: 0;
-            text-align: center;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            justify-content: center
+            padding-top: 30px;
         }
-    
-        .seccion-perfil-usuario .redes-sociales .boton-redes+.boton-redes {
-            margin-left: 1rem;
-            margin-top: 0;
+
+        .perfil-usuario-header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            background: linear-gradient(#a74343, transparent);
+            margin-bottom: 1.25rem;
+            position: relative;
         }
-    }
+
+        .perfil-usuario-portada {
+            display: block;
+            position: relative;
+            width: 75%;
+            height: 17rem;
+            background-image: linear-gradient(45deg, #e05c88, #ad5522);
+            border-radius: 0 0 20px 20px;
+        }
+
+        .perfil-usuario-portada .boton-portada {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 25px;
+            background-color: rgba(0, 0, 0, .5);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .perfil-usuario-avatar {
+            display: flex;
+            width: 180px;
+            height: 180px;
+            align-items: center;
+            justify-content: center;
+            border: 7px solid #FFFFFF;
+            background-color: #DFE5F2;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(0, 0, 0, .2);
+            position: absolute;
+            bottom: -40px;
+            left: calc(50% - 90px);
+            z-index: 1;
+        }
+
+        .perfil-usuario-avatar img {
+            width: 100%;
+            position: relative;
+            border-radius: 50%;
+        }
+
+        /* Tarjetas de datos */
+        .card {
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            background-color: #fff;
+            padding: 30px; /* Añadido padding para que sea más ancho */
+            width: 70%; /* Aumentado el ancho de la carta */
+        }
+
+        .card-header {
+            background-color: #f2f2f2;
+            padding: 15px;
+            font-size: 1.25em;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 12px;
+            font-size: 1em;
+            margin-bottom: 15px; /* Espaciado entre campos */
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+
+        .perfil-usuario-bio {
+            text-align: center;
+            padding: 15px;
+            background-color: #f7f7f7;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .perfil-usuario-footer {
+            text-align: center;
+            padding-top: 15px;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        /* Estilo de redes sociales */
+        .redes-sociales {
+            position: absolute;
+            right: calc(0px - 50px - 1rem);
+            top: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .redes-sociales .boton-redes {
+            border: 0;
+            background-color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(0, 0, 0, .2);
+            font-size: 1.3rem;
+        }
+
+        .boton-redes.facebook {
+            background-color: #5955FF;
+        }
+
+        .boton-redes.twitter {
+            background-color: #35E1BF;
+        }
+
+        .boton-redes.instagram {
+            background: linear-gradient(45deg, #FF2DFD, #40A7FF);
+        }
+
+        @media (max-width: 750px) {
+            .perfil-usuario-portada,
+            .perfil-usuario-body {
+                width: 95%;
+            }
+
+            .seccion-perfil-usuario {
+                padding: 15px;
+            }
+
+            .redes-sociales {
+                position: relative;
+                flex-direction: row;
+                text-align: center;
+                width: 100%;
+                margin-top: 1rem;
+            }
+
+            .redes-sociales .boton-redes+.boton-redes {
+                margin-left: 1rem;
+                margin-top: 0;
+            }
+        }
     </style>
-        <!--==========================
-    =            html            =
-    ===========================-->
+
+    <!-- Perfil de usuario -->
     <section class="seccion-perfil-usuario">
         <div class="perfil-usuario-header">
             <div class="perfil-usuario-portada">
                 <div class="perfil-usuario-avatar">
-                    <!-- Imagen de perfil -->
                     <img src="{% static 'assets/images/img-perfil.png' %}" alt="img-avatar">
-                    <button type="button" class="boton-avatar">
-                        <i class="far fa-image"></i>
-                    </button>
                 </div>
-                <button type="button" class="boton-portada">
-                    <i class="far fa-image"></i> Cambiar fondo
-                </button>
             </div>
         </div>
-        <div class="perfil-usuario-body">
-            <div class="perfil-usuario-bio">
-                <h3 class="titulo">{{ usuario.first_name }} {{ usuario.last_name }}</h3>
-                <p class="texto">{{ usuario.direccion }}</p>
-            </div>
-            <div class="perfil-usuario-footer">
-                <ul class="lista-datos">
-                    <li><i class="icono fas fa-envelope"></i> Dirección de correo:</li>
-                    <input class="controls" type="email" value="{{ usuario.email }}" disabled>
-                    
-                    <li><i class="icono fas fa-phone-alt"></i> Teléfono:</li>
-                    <input class="controls" type="tel" value="{{ usuario.telefono }}" placeholder="Ingrese su Teléfono">
-                    
-                    <li><i class="fas fa-calendar-alt"></i> Fecha de Nacimiento:</li>
-                    <input class="controls" type="date" value="{{ usuario.fechanac }}" placeholder="Ingrese su Fecha de Nacimiento">
     
-                    <li><i class="fas fa-genderless"></i> Género:</li>
-                    <label>
-                        <input type="radio" name="genero" value="h" {% if usuario.genero == 'h' %}checked{% endif %}> Hombre
-                    </label>
-                    <label>
-                        <input type="radio" name="genero" value="m" {% if usuario.genero == 'm' %}checked{% endif %}> Mujer
-                    </label>
-                </ul>
-                <ul class="lista-datos">
-                    <li><i class="icono fas fa-map-marker-alt"></i> Dirección:</li>
-                    <input class="controls" type="text" value="{{ usuario.direccion }}" placeholder="Ingrese su Dirección">
-
-                    {% if suscripcion %}
-                    <div class="perfil-usuario-subscripcion">
-                        <h3>Suscripción Activa</h3>
-                        <p>Tipo de Suscripción: {{ suscripcion.id_ts.nombre }}</p>
-                        <p>Fecha de inicio: {{ suscripcion.fecha_inicio }}</p>
-                    </div>
-                    {% else %}
-                    <div class="perfil-usuario-subscripcion">
-                        <p>No tienes una suscripción activa.</p>
-                    </div>
-                    {% endif %}
-                </ul>
-                <div class="perfil-usuario-compras">
-                    <h3>Histórico de Compras</h3>
-                    <ul>
-                        {% for compra in compras %}
-                            <li>{{ compra.cantidad }} x {{ compra.producto.nom_libro }} - {{ compra.fecha_compra }}</li>
-                        {% empty %}
-                            <li>No has realizado ninguna compra aún.</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+        <!-- Card para datos personales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Datos Personales</h3>
             </div>
-
-            <div class="redes-sociales">
-                <a href="#" class="boton-redes facebook fab fa-facebook-f"></a>
-                <a href="#" class="boton-redes twitter fab fa-twitter"></a>
-                <a href="#" class="boton-redes instagram fab fa-instagram"></a>
+            <div class="card-body">
+                <form method="POST" action="{% url 'Perfil' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="first_name">Nombre:</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ usuario.first_name }}">
+                        {% if errors.first_name %}
+                        <small class="text-danger">{{ errors.first_name }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Apellido:</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ usuario.last_name }}">
+                        {% if errors.last_name %}
+                        <small class="text-danger">{{ errors.last_name }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="direccion">Dirección:</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ usuario.direccion }}">
+                        {% if errors.direccion %}
+                        <small class="text-danger">{{ errors.direccion }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="telefono">Teléfono:</label>
+                        <input type="tel" class="form-control" id="telefono" name="telefono" value="{{ usuario.telefono }}">
+                        {% if errors.telefono %}
+                        <small class="text-danger">{{ errors.telefono }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="fechanac">Fecha de Nacimiento:</label>
+                        <input type="date" class="form-control" id="fechanac" name="fechanac" value="{{ usuario.fechanac }}">
+                        {% if errors.fechanac %}
+                        <small class="text-danger">{{ errors.fechanac }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="rut">Rut:</label>
+                        <input type="text" class="form-control" id="rut" name="rut" value="{{ usuario.rut }}">
+                        {% if errors.rut %}
+                        <small class="text-danger">{{ errors.rut }}</small>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </form>
+            </div>
+        </div>
+        <!-- Card para la suscripción activa -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Suscripción Activa</h3>
+            </div>
+            <div class="card-body">
+                {% if suscripcion %}
+                    <p><strong>Tipo de Suscripción:</strong> {{ suscripcion.id_ts.nombre }}</p>
+                    <p><strong>Fecha de inicio:</strong> {{ suscripcion.fecha_inicio }}</p>
+                    <p><strong>Fecha de fin:</strong> {{ suscripcion.fecha_fin }}</p>
+                {% else %}
+                    <p>No tienes una suscripción activa.</p>
+                {% endif %}
+            </div>
+        </div>
+    
+        <!-- Card para el historial de compras -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Histórico de Compras</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    {% for compra in compras %}
+                        <li>{{ compra.cantidad }} x {{ compra.producto.nom_libro }} - {{ compra.fecha_compra }}</li>
+                    {% empty %}
+                        <li>No has realizado ninguna compra aún.</li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
     </section>
-        <!--====  End of html  ====-->
     
     <style>
     .mensaje a {
@@ -341,3 +317,22 @@
     }
     </style>
  {% endblock %}
+
+ <script>
+    document.querySelector('form').addEventListener('submit', function(event) {
+        let valid = true;
+        const inputs = document.querySelectorAll('input');
+        
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                valid = false;
+                alert(`El campo ${input.name} no puede estar vacío.`);
+            }
+        });
+
+        if (!valid) {
+            event.preventDefault();
+        }
+    });
+</script>
+

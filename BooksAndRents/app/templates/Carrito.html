@@ -3,12 +3,14 @@
 {% block title %}Mi Carrito - Books&Rents{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Carrito de {{ request.user.first_name }}</h1>
+<div class="container my-5">
+    <h1 class="text-center mb-4">Carrito de {{ request.user.first_name }}</h1>
+    {% if items %}
     <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
+        <table class="table table-bordered text-center">
+            <thead class="thead-light">
                 <tr>
+                    <th>Imagen</th>
                     <th>Producto</th>
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
@@ -19,49 +21,68 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ item.producto.nom_libro }}</td>
-                    <td>{{ item.cantidad }}</td>
-                    <td>${{ item.producto.precio }}</td>
-                    <td>${{ item.get_total }}</td>
+                    <!-- Columna de imagen -->
                     <td>
-                        <form method="POST" action="{% url 'eliminar_del_carrito' item.id %}">
+                        <img src="{{ item.producto.imagen_url }}" alt="{{ item.producto.nom_libro }}" 
+                             class="img-thumbnail" style="width: 100px; height: auto;">
+                    </td>
+                    <td>
+                        <strong>{{ item.producto.nom_libro }}</strong>
+                    </td>
+                    <td>
+                        {{ item.cantidad }}
+                    </td>
+                    <td>
+                        ${{ item.producto.precio|floatformat:2 }}
+                    </td>
+                    <td>
+                        ${{ item.get_total|floatformat:2 }}
+                    </td>
+                    <td>
+                        <form method="POST" action="{% url 'eliminar_del_carrito' item.id %}" class="d-inline">
                             {% csrf_token %}
-                            <input type="number" name="cantidad" min="1" max="{{ item.cantidad }}" value="1" class="form-control" style="width: 60px; display:inline-block;">
-                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                            <input type="number" name="cantidad" min="1" max="{{ item.cantidad }}" value="1" class="form-control d-inline w-50 mb-2" style="display:inline-block;">
+                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
                     </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">Tu carrito está vacío.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <div class="text-right">
-        <h2>Total: ${{ total }}</h2>
+    <div class="mt-5">
+        <h3 class="text-center">Resumen</h3>
+        <div class="card shadow-sm p-4 mt-3">
+            <p><strong>Total antes del descuento:</strong> ${{ carrito.get_cart_total|floatformat:2 }}</p>
+            {% if suscripcion %}
+            <p>
+                <strong>Descuento por suscripción ({{ suscripcion.id_ts.nombre }}):</strong> 
+                -${{ descuento|floatformat:2 }}
+            </p>
+            {% endif %}
+            <p><strong>Total a pagar:</strong> 
+                <span class="text-success h4">${{ total|floatformat:2 }}</span>
+            </p>
+        </div>
+        <!-- Botón de Mercado Pago -->
+        <div id="button-checkout" class="text-center mt-4"></div>
     </div>
-
-    {% if items %}
-    <!-- Contenedor para el botón de pago de Mercado Pago -->
-    <div id="button-checkout" class="text-right" style="margin-top: 20px; min-height: 50px;"></div>
+    {% else %}
+    <div class="text-center">
+        <h3 class="my-5">Tu carrito está vacío.</h3>
+        <a href="{% url 'ComprarLibros' %}" class="btn btn-primary">Explorar libros</a>
+    </div>
     {% endif %}
 </div>
 
 <!-- SDK de Mercado Pago -->
 <script src="https://sdk.mercadopago.com/js/v2"></script>
-
 <script>
-    // Inicializar el SDK de Mercado Pago con clave pública
     const mp = new MercadoPago('APP_USR-a0e5e44b-304f-4bd8-bc48-a8789a8e37e3', {
-        locale: 'es-CL' // chilito
+        locale: 'es-CL' // Chile
     });
 
-    // Solo generar el botón si hay elementos en el carrito
     if (document.getElementById("button-checkout")) {
-        // Obtener el token CSRF desde las cookies
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -79,35 +100,27 @@
 
         const csrftoken = getCookie('csrftoken');
 
-        // Obtener el `preference_id` del backend para generar el botón de pago
         fetch("{% url 'checkout' %}", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-CSRFToken": csrftoken // Incluye el token CSRF si es necesario
+                "X-CSRFToken": csrftoken
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor: ' + response.statusText);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('Respuesta del servidor:', data); // Log para depuración
             if (data.preference_id) {
-                // Renderizar el botón de pago
                 mp.checkout({
                     preference: {
-                        id: data.preference_id  // Utiliza el `preference_id` devuelto por la vista 'checkout'
+                        id: data.preference_id
                     },
                     render: {
-                        container: '#button-checkout', // Contenedor donde se insertará el botón de pago
-                        label: `Pagar`, // Texto del botón, incluye el monto total
+                        container: '#button-checkout',
+                        label: `Pagar $${data.total.toFixed(2)}`,
                     }
                 });
             } else {
-                console.error('No se recibió un preference_id válido.');
+                console.error('Error al obtener la preferencia de pago.');
             }
         })
         .catch(error => {
@@ -115,5 +128,4 @@
         });
     }
 </script>
-
 {% endblock %}
