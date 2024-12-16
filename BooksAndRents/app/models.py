@@ -9,7 +9,7 @@ import os
 import requests
 import re
 from django.conf import settings
-
+from .validators import *
 # Create your models here.
 
 
@@ -39,7 +39,14 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     """Modelo de usuario personalizado donde el email es el identificador único"""
     email = models.EmailField(unique=True)
-    rut = models.CharField(max_length=50, null=True, blank=True)
+    rut = models.CharField(
+        max_length=12,
+        null=True,
+        blank=True,
+        unique=True,  # Verifica automáticamente que el RUT sea único
+        validators=[validar_rut],
+        help_text="Ingresa un RUT válido sin puntos y con guion (Ej: 12345678K)"
+    )
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     telefono = models.IntegerField(null=True, blank=True)
@@ -80,10 +87,6 @@ class Autor(models.Model):
     def __str__(self):
         return self.nombre_autor
   # Asegúrate de tener la función ajustada
-
-
-
-
 
 
 
@@ -198,10 +201,6 @@ class LibroArr(models.Model):
                     print(f"Error al descargar la imagen desde {url}: {e}")
             else:
                 print("URL de imagen no válida.")
-
-
-
-
 
 
 

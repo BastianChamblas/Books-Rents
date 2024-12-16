@@ -18,6 +18,7 @@ from django.template.loader import render_to_string
 from django.utils.timezone import now, timedelta
 from .utils import *
 from django.db import transaction
+from .validators import *
 
 
 
@@ -48,8 +49,24 @@ def Arriendos(request):
         messages.error(request, 'Debe tener una suscripción activa para realizar un arriendo.')
         return redirect('Suscripciones')  # Redirige a la página de suscripciones si no está suscrito
 
-    # Obtener los libros con stock disponible para el arriendo
-    libros = LibroArr.objects.filter(stock__gt=0)
+    # Obtener los filtros de búsqueda (nombre, género, autor)
+    query = request.GET.get('search', '')  # Búsqueda por nombre
+    genero_filter = request.GET.get('genero', None)  # Filtro por género
+    autor_filter = request.GET.get('autor', None)  # Filtro por autor
+
+    # Filtrar los libros disponibles para el arriendo
+    libros = LibroArr.objects.filter(stock__gt=0)  # Solo los libros con stock disponible
+
+    if query:
+        libros = libros.filter(nom_libro__icontains=query)  # Filtrar por nombre del libro
+    if genero_filter:
+        libros = libros.filter(id_genero_id=genero_filter)  # Filtrar por género
+    if autor_filter:
+        libros = libros.filter(id_autor_id=autor_filter)  # Filtrar por autor
+
+    # Obtener géneros y autores para los filtros
+    generos = GeneroLib.objects.all()
+    autores = Autor.objects.all()
 
     # Verifica y descarga las imágenes
     for libro in libros:
@@ -100,7 +117,10 @@ def Arriendos(request):
 
     return render(request, 'Arriendos.html', {
         'libros': libros,
-        'arriendos': arriendos
+        'arriendos': arriendos,
+        'query': query,
+        'generos': generos,
+        'autores': autores,
     })
 
 def CarritoPagina(request):
@@ -339,6 +359,7 @@ def confirmacion_pago(request):
         # Si el pago no está aprobado, redirige al usuario a una página de error
         return render(request, "error_pago.html")
 
+
 @csrf_exempt
 def pago_webhook(request):
     if request.method == "POST":
@@ -385,15 +406,36 @@ def pago_webhook(request):
 def payment_page(request):
     return render(request, 'payment.html')  #  'payment.html'
 
-def ComprarLibros(request):
-    # Obtenemos el término de búsqueda de los GET parameters
-    query = request.GET.get('search', '')  # Este es el campo que se pasa en la URL
-    if query:
-        libros = Libro.objects.filter(nom_libro__icontains=query)  # Filtramos los libros por el nombre
-    else:
-        libros = Libro.objects.all()  # Si no hay término de búsqueda, mostramos todos los libros
 
-    return render(request, 'ComprarLibros.html', {'libros': libros, 'query': query})
+def ComprarLibros(request):
+    # Obtener el término de búsqueda y los filtros
+    query = request.GET.get('search', '')
+    genero_filter = request.GET.get('genero', None)
+    autor_filter = request.GET.get('autor', None)
+
+    # Filtrar libros según los criterios
+    libros = Libro.objects.all()
+    if query:
+        libros = libros.filter(nom_libro__icontains=query)
+    if genero_filter:
+        libros = libros.filter(id_genero_id=genero_filter)
+    if autor_filter:
+        libros = libros.filter(id_autor_id=autor_filter)
+
+    # Obtener géneros y autores para los filtros
+    generos = GeneroLib.objects.all()
+    autores = Autor.objects.all()
+
+    return render(request, 'ComprarLibros.html', {
+        'libros': libros,
+        'query': query,
+        'generos': generos,
+        'autores': autores,
+    })
+
+
+
+
 
 def descargar_imagen_libro(libro):
     """
@@ -417,6 +459,7 @@ def descargar_imagen_libro(libro):
         else:
             print("Error al descargar la imagen.")
     return None
+
 
 def descargar_imagen_libroarr(libroarr):
     """
@@ -450,39 +493,7 @@ def descargar_imagen_libroarr(libroarr):
 
 
 
-import re
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import Compra, Sub
 
-def validar_rut(rut: str) -> bool:
-    # Limpiar el RUT
-    rut = rut.replace(".", "").replace("-", "").upper()
-
-    # Verifica que el RUT tenga al menos 2 caracteres
-    if len(rut) < 2:
-        return False
-    
-    # Paso 2: Separar el cuerpo y el dígito verificador
-    cuerpo = rut[:-1]
-    dv_ingresado = rut[-1]
-
-    # Paso 3: Calcular el dígito verificador esperado
-    factores = [2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6, 7]  # Factor para los RUTs chilenos
-    suma = 0
-    for i, digito in enumerate(reversed(cuerpo)):
-        suma += int(digito) * factores[i % len(factores)]
-    
-    resto = suma % 11
-    dv_calculado = str(11 - resto) if resto != 0 else '0'
-    if dv_calculado == '10':
-        dv_calculado = 'K'
-    
-    # Paso 4: Comparar el dígito verificador calculado con el ingresado
-    return dv_calculado == dv_ingresado
-
-# Prueba de la función con un RUT válido
-print(validar_rut("12.345.678-5"))  # Esto debería devolver True
 
 @login_required
 def Perfil(request):
@@ -510,12 +521,21 @@ def Perfil(request):
             errors['direccion'] = 'La dirección no puede estar vacía.'
         if not telefono:
             errors['telefono'] = 'El teléfono no puede estar vacío.'
+        else:
+            # Validar que el teléfono solo contenga dígitos
+            if not telefono.isdigit():
+                errors['telefono'] = 'El teléfono solo puede contener números.'
+
         if not fechanac:
             errors['fechanac'] = 'La fecha de nacimiento no puede estar vacía.'
         if not rut:
             errors['rut'] = 'El RUT no puede estar vacío.'
-        elif not validar_rut(rut):  # Aquí estamos llamando la función de validación
-            errors['rut'] = 'El RUT ingresado no es válido.'
+        else:
+            try:
+                # Validar el RUT usando el validador
+                validar_rut(rut)
+            except ValidationError as e:
+                errors['rut'] = e.message  # Captura el mensaje de error del validador
 
         if errors:
             # Renderizar perfil con errores
@@ -544,8 +564,6 @@ def Perfil(request):
         'suscripcion': suscripcion
     })
 
-
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
@@ -555,6 +573,7 @@ from django.utils.timezone import now
 import json
 
 @csrf_exempt
+@login_required
 def procesar_pago(request):
     if request.method == 'POST':
         try:
@@ -596,6 +615,12 @@ def procesar_pago(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
     return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
+
+# Configuración del manejador para error 404
+def custom_404(request, exception):
+    return render(request, '404.html', status=404)
+
+handler404 = custom_404
 
 
 

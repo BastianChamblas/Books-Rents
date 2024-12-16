@@ -11,8 +11,21 @@ class CustomUserCreationForm(UserCreationForm):
         widgets = {
             'fechanac': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
+        labels = {
+            'email': 'Correo Electrónico',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'rut': 'RUT',
+            'telefono': 'Teléfono',
+            'fechanac': 'Fecha de Nacimiento',
+            'direccion': 'Dirección',
+        }
 
 class CustomAuthenticationForm(AuthenticationForm):
     class Meta:
         model = CustomUser
         fields = ['email', 'password']
+        labels = {
+            'email': 'Correo Electrónico',
+            'password': 'Contraseña',
+        }

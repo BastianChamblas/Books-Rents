@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-1l4$q+&r$k=kchwcqxzdlmjzeue7x+o!qp3jk@8_pzsxdw+fe2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+DEBUG = False
+# Asegúrate de configurar ALLOWED_HOSTS correctamente
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -134,7 +134,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]
+
+if DEBUG:
+    STATICFILES_DIRS = [BASE_DIR / "static"]
+else:
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 AUTH_USER_MODEL = 'app.CustomUser'
 
@@ -150,6 +155,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/' # Para cuando iniciamos secion, ej: perfil
 LOGOUT_REDIRECT_URL = '/' # Para cuando cerremos secion
 LOGIN_URL = '/ingreso'
+
+PASSWORD_RESET_TIMEOUT = 3600  # Tiempo de expiración del enlace en segundos (1 hora)C
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES' : [
